@@ -10,7 +10,7 @@ export default function Home() {
       </Head>
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Codes
+          Codes Check
         </h1>
       </main>
     </>
