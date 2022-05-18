@@ -221,7 +221,7 @@ export async function getStaticProps() {
 
     return {
       props: {
-        test: questionResult.items || [],
+        test: question.questionTitle,
         question: {
           ...question,
           property: question.estate.fields.estateProperty.map((p) => p.fields),
