@@ -208,15 +208,16 @@ export default function Problems({ test, question }) {
   )
 }
 
-export async function getStaticProps() {
+export async function getServerSideProps() {
   try {
     const questionResult = await ContentfulAPI.getEntries({
       content_type: 'question',
       include: 10
     })
 
-    const question =
-      questionResult.items[Math.floor(Math.random() * questionResult.items.length)].fields
+    const question = await questionResult.items[
+      Math.floor(Math.random() * questionResult.items.length)
+    ].fields
 
     return {
       props: {
