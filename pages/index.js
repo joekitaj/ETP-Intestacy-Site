@@ -9,7 +9,7 @@ export default function Home() {
         <meta name="description" content="ETP Site" />
       </Head>
       <main className={styles.main}>
-        <h1 className={styles.title}>Home</h1>
+        <h1 className={styles.title}>Test</h1>
       </main>
     </>
   )
