@@ -215,9 +215,8 @@ export async function getStaticProps() {
       include: 10
     })
 
-    const question = await questionResult.items[
-      Math.floor(Math.random() * questionResult.items.length)
-    ].fields
+    const question =
+      questionResult.items[Math.floor(Math.random() * questionResult.items.length)].fields
 
     return {
       props: {
