@@ -1,6 +1,7 @@
 import styles from '../styles/Home.module.css'
 import { ContentfulAPI } from '../utils/contentful'
 import RichText from '../utils/richtext'
+// eslint-disable-next-line no-unused-vars
 import isEqual from 'lodash'
 import Head from 'next/head'
 import { useState } from 'react'
@@ -55,7 +56,8 @@ export default function Problems({ question }) {
     const alphabetizedData = formData.sort(compare)
     console.log('DATA: ', alphabetizedData)
     console.log('ANSWERS: ', alphabetizedAnswers)
-    isEqual(alphabetizedData, alphabetizedAnswers) ? alert('CORRECT!') : alert('Try Again!')
+    // eslint-disable-next-line no-undef
+    _.isEqual(alphabetizedData, alphabetizedAnswers) ? alert('CORRECT!') : alert('Try Again!')
   }
 
   return (
@@ -209,13 +211,13 @@ export async function getStaticProps() {
   try {
     const questionResult = await ContentfulAPI.getEntries({
       content_type: 'question',
-      include: 5
+      include: 10,
+      skip: 0
     })
 
-    const questionArr = await questionResult.items.map((q) => {
-      return q.fields
-    })
-    const question = questionArr[Math.floor(Math.random() * questionArr.length)]
+    const question = await questionResult.items[
+      Math.floor(Math.random() * questionResult.items.length)
+    ].fields
 
     return {
       props: {
