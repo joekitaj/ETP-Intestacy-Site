@@ -6,7 +6,8 @@ import isEqual from 'lodash'
 import Head from 'next/head'
 import { useState } from 'react'
 
-export default function Problems({ question }) {
+export default function Problems({ test, question }) {
+  console.log(test)
   const [formData = [], setFormData] = useState()
   const { questionTitle = '', questionText = '', decedent = {}, answers, property } = question
   const { fields } = decedent
@@ -211,8 +212,7 @@ export async function getStaticProps() {
   try {
     const questionResult = await ContentfulAPI.getEntries({
       content_type: 'question',
-      include: 10,
-      skip: 0
+      include: 10
     })
 
     const question = await questionResult.items[
@@ -221,6 +221,7 @@ export async function getStaticProps() {
 
     return {
       props: {
+        test: questionResult.items || [],
         question: {
           ...question,
           property: question.estate.fields.estateProperty.map((p) => p.fields),
