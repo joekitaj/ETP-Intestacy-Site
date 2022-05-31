@@ -20,12 +20,14 @@
   "dependencies": {
     "@contentful/rich-text-react-renderer": "^15.12.1",
     "@contentful/rich-text-types": "^15.12.1",
+    "classnames": "^2.3.1",
     "contentful": "^9.1.28",
     "dotenv": "^16.0.1",
     "lodash": "^4.17.21",
     "next": "12.1.6",
     "react": "18.1.0",
-    "react-dom": "18.1.0"
+    "react-dom": "18.1.0",
+    "react-family-tree": "^3.1.0"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
