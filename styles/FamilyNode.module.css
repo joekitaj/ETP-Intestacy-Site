@@ -7,8 +7,17 @@
 .inner {
   display: flex;
   flex: 1;
-  border: 2px solid rgba(0, 0, 0, 0.2);
+  border: 4px solid rgba(0, 0, 0, 0.2);
   border-radius: 10px 0;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+}
+
+.inner p {
+  margin: 0;
+  color: #eee;
 }
 
 .male {
@@ -20,7 +29,7 @@
 }
 
 .isRoot {
-  border-color: rgba(0, 0, 0, 0.4);
+  border-color: rgba(0, 0, 0, 1);
 }
 
 .sub {
@@ -41,4 +50,8 @@
 
 .sub.female {
   background: #a4ecff;
+}
+
+.neutral {
+  background: #329da8;
 }

@@ -1,0 +1,21 @@
+.container {
+  width: 100%;
+  background: #eee;
+}
+
+.root {
+  display: flex;
+  flex-direction: column;
+  background: #eee;
+  height: 100%;
+}
+
+.wrapper {
+  flex: 1;
+  height: 500px;
+  margin: auto;
+}
+
+.tree {
+  background: #eee;
+}

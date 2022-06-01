@@ -1,62 +1,68 @@
 import styles from '../styles/Home.module.css'
 import { ContentfulAPI } from '../utils/contentful'
+import createFamilyTree from '../utils/createFamilyTree'
 import RichText from '../utils/richtext'
 // eslint-disable-next-line no-unused-vars
 import isEqual from 'lodash'
+import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import { useState } from 'react'
+import safeJsonStringify from 'safe-json-stringify'
 
-export default function Problems({ test, question }) {
-  console.log(test)
-  const [formData = [], setFormData] = useState()
-  const { questionTitle = '', questionText = '', decedent = {}, answers, property } = question
-  const { fields } = decedent
-  const { spouse, siblings, parents, children } = fields
+const DynamicComponentWithNoSSR = dynamic(() => import('../components/FamilyTree'), { ssr: false })
 
-  const handleInputChange = (name, value, isSelect = false) => {
-    const foundIndex = formData.findIndex((x) => x.recipient === name)
+export default function Problems({ question = {} }) {
+  const [formData, setFormData] = useState([])
+  const { questionTitle = '', questionText, family = [], decedent, answers } = question
+  const familyTree = createFamilyTree(family)
+  const ESTATE = 1000
 
+  const answersArr = answers.map((a) => {
+    return {
+      id: a.fields.recipient.fields.name,
+      value: `${(a.fields.value / 100) * ESTATE}`,
+      property: []
+    }
+  })
+
+  const handleInputChange = (name, value) => {
+    const foundIndex = formData.findIndex((x) => x.id === name)
     if (foundIndex > -1) {
       const newFormData = formData
-      if (
-        !value ||
-        value === '' ||
-        value === '0' ||
-        value === 0 ||
-        (isSelect && formData[foundIndex].value === 0 && value === 'No property')
-      ) {
-        newFormData.splice(foundIndex, 1)
-      } else {
-        !isSelect
-          ? (newFormData[foundIndex] = { ...formData[foundIndex], value })
-          : (newFormData[foundIndex] = { ...formData[foundIndex], property: [value] })
+      newFormData[foundIndex] = {
+        id: name,
+        value,
+        property: []
       }
       setFormData(newFormData)
     } else {
-      !value || value === '' || value === '0' || value === 0
-        ? null
-        : setFormData([
-            ...formData,
-            { recipient: name, value: !isSelect ? value : 0, property: isSelect ? [value] : null }
-          ])
+      setFormData([
+        ...formData,
+        {
+          id: name,
+          value,
+          property: []
+        }
+      ])
     }
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
     const compare = (a, b) => {
-      if (a.recipient < b.recipient) {
+      if (a.id < b.id) {
         return -1
       }
-      if (a.recipient > b.recipient) {
+      if (a.id > b.id) {
         return 1
       }
       return 0
     }
-    const alphabetizedAnswers = answers.sort(compare)
-    const alphabetizedData = formData.sort(compare)
-    console.log('DATA: ', alphabetizedData)
-    console.log('ANSWERS: ', alphabetizedAnswers)
+    const alphabetizedAnswers = answersArr.sort(compare)
+    const scrubbedFormData = formData.filter(
+      (data) => data.value && data.value !== '' && data.value !== 0 && data.value !== '0'
+    )
+    const alphabetizedData = scrubbedFormData.sort(compare)
     // eslint-disable-next-line no-undef
     _.isEqual(alphabetizedData, alphabetizedAnswers) ? alert('CORRECT!') : alert('Try Again!')
   }
@@ -69,6 +75,7 @@ export default function Problems({ test, question }) {
       </Head>
       <main className={styles.main}>
         <h1 className={styles.title}>{questionTitle}</h1>
+        <DynamicComponentWithNoSSR tree={familyTree} rootId={decedent.fields.name} />
         <RichText content={questionText} />
         <div className={styles.answersContainer}>
           <form
@@ -76,22 +83,24 @@ export default function Problems({ test, question }) {
               handleSubmit(e)
             }}
           >
-            {spouse &&
-              spouse.map((sp, i) => {
-                return (
-                  <div className={styles.inputContainer} key={`list-item-${i}`}>
-                    <p className={styles.familyName}>{sp.fields.name}</p>
-                    <label className={styles.listHeading}>$: </label>
-                    <input
-                      name={sp.fields.name}
-                      type="number"
-                      onChange={(e) => handleInputChange(sp.fields.name, e.target.value)}
-                    />
-                    {property && property.length > 0 && (
+            <div className={styles.flexContainer}>
+              {familyTree &&
+                familyTree.map((person, i) => {
+                  return (
+                    person.id !== familyTree[0].id && (
+                      <div className={styles.inputContainer} key={`list-item-${i}`}>
+                        <p className={styles.familyName}>{person.id}</p>
+                        <label className={styles.listHeading}>$: </label>
+                        <input
+                          name={person.id}
+                          type="number"
+                          onChange={(e) => handleInputChange(person.id, e.target.value)}
+                        />
+                        {/*{property && property.length > 0 && (
                       <div>
                         <label className={styles.selectLabel}>Estate Property: </label>
                         <select
-                          onChange={(e) => handleInputChange(sp.fields.name, e.target.value, true)}
+                          onChange={(e) => handleInputChange(person.id, e.target.value, true)}
                         >
                           <option default value={null}>
                             No property
@@ -103,104 +112,13 @@ export default function Problems({ test, question }) {
                           ))}
                         </select>
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            {parents &&
-              parents.map((sp, i) => {
-                return (
-                  <div className={styles.inputContainer} key={`list-item-${i}`}>
-                    <p className={styles.familyName}>{sp.fields.name}</p>
-                    <label className={styles.listHeading}>$: </label>
-                    <input
-                      name={sp.fields.name}
-                      type="number"
-                      onChange={(e) => handleInputChange(sp.fields.name, e.target.value)}
-                    />
-                    {property && property.length > 0 && (
-                      <div>
-                        <label className={styles.selectLabel}>Estate Property: </label>
-                        <select
-                          onChange={(e) => handleInputChange(sp.fields.name, e.target.value, true)}
-                        >
-                          <option default value={null}>
-                            No property
-                          </option>
-                          {property.map((p) => (
-                            <option key={p.title} value={p.title}>
-                              {p.title}
-                            </option>
-                          ))}
-                        </select>
+                    )}*/}
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            {children &&
-              children.map((sp, i) => {
-                return (
-                  <div className={styles.inputContainer} key={`list-item-${i}`}>
-                    <p className={styles.familyName}>{sp.fields.name}</p>
-                    <label className={styles.listHeading}>$: </label>
-                    <input
-                      name={sp.fields.name}
-                      type="number"
-                      onChange={(e) => handleInputChange(sp.fields.name, e.target.value)}
-                    />
-                    {property && property.length > 0 && (
-                      <div>
-                        <label className={styles.selectLabel}>Estate Property: </label>
-                        <select
-                          onChange={(e) => handleInputChange(sp.fields.name, e.target.value, true)}
-                        >
-                          <option default value={null}>
-                            No property
-                          </option>
-                          {property.map((p) => (
-                            <option key={p.title} value={p.title}>
-                              {p.title}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            {siblings &&
-              siblings.map((sp, i) => {
-                return (
-                  <div key={`list-item-${i}`} className={styles.inputContainer}>
-                    <p className={styles.familyName}>{sp.fields.name}</p>
-                    <label className={styles.listHeading}>$: </label>
-                    <input
-                      name={sp.fields.name}
-                      type="number"
-                      onChange={(e) => handleInputChange(sp.fields.name, e.target.value)}
-                    />
-                    {property && property.length > 0 && (
-                      <div>
-                        <label className={styles.selectLabel}>Estate Property: </label>
-                        <select
-                          onChange={(e) => handleInputChange(sp.fields.name, e.target.value, true)}
-                        >
-                          <option default value={null}>
-                            No property
-                          </option>
-                          {property.map((p) => (
-                            <option key={p.title} value={p.title}>
-                              {p.title}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            <input type="submit" value="Submit" />
+                    )
+                  )
+                })}
+            </div>
+            <input type="submit" value="Submit" className={styles.submit} />
           </form>
         </div>
       </main>
@@ -215,27 +133,14 @@ export async function getServerSideProps() {
       include: 10
     })
 
-    const question = await questionResult.items[
-      Math.floor(Math.random() * questionResult.items.length)
-    ].fields
+    const cleanData = safeJsonStringify(questionResult)
+    const data = JSON.parse(cleanData)
+
+    const question = await data.items[Math.floor(Math.random() * data.items.length)].fields
 
     return {
       props: {
-        test: question.questionTitle,
-        question: {
-          ...question,
-          property: question.estate.fields.estateProperty.map((p) => p.fields),
-          answers: question.answers.map((a) => {
-            return {
-              recipient: a.fields.recipient.fields.name,
-              value: a.fields.answerValue,
-              property:
-                a.fields.property && a.fields.property.length > 0
-                  ? a.fields.property.map((p) => p.fields.title)
-                  : null
-            }
-          })
-        }
+        question
       }
     }
   } catch (e) {
