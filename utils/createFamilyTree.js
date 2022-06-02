@@ -5,7 +5,9 @@ function scrubFields(p) {
     spouses: [],
     children: [],
     parents: [],
-    siblings: []
+    siblings: [],
+    gender: fields.gender === 'Female' || fields.gender === 'Male' ? fields.gender : 'neutral',
+    isDead: fields.dead
   }
 
   if (fields.spouses && fields.spouses.length > 0) {

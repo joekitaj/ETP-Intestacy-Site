@@ -6,21 +6,26 @@ import RichText from '../utils/richtext'
 import isEqual from 'lodash'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
+import ReactModal from 'react-modal'
 import safeJsonStringify from 'safe-json-stringify'
 
 const DynamicComponentWithNoSSR = dynamic(() => import('../components/FamilyTree'), { ssr: false })
 
 export default function Problems({ question = {} }) {
+  const router = useRouter()
   const [formData, setFormData] = useState([])
-  const { questionTitle = '', questionText, family = [], decedent, answers } = question
+  const [modal, setModal] = useState({ status: false, open: false })
+  const { questionTitle = '', questionText, family = [], decedent, answers, estate } = question
+  const { totalValue, property } = estate.fields
   const familyTree = createFamilyTree(family)
-  const ESTATE = 1000
 
   const answersArr = answers.map((a) => {
     return {
       id: a.fields.recipient.fields.name,
-      value: `${(a.fields.value / 100) * ESTATE}`,
+      value: `${Math.round(Math.floor((a.fields.value / 100) * totalValue) / 100)}`,
       property: []
     }
   })
@@ -64,7 +69,17 @@ export default function Problems({ question = {} }) {
     )
     const alphabetizedData = scrubbedFormData.sort(compare)
     // eslint-disable-next-line no-undef
-    _.isEqual(alphabetizedData, alphabetizedAnswers) ? alert('CORRECT!') : alert('Try Again!')
+    _.isEqual(alphabetizedData, alphabetizedAnswers)
+      ? setModal({ status: true, open: true })
+      : setModal({ status: false, open: true })
+  }
+
+  const handleTryAgain = () => {
+    setModal({ status: false, open: false })
+  }
+
+  const handleTryAnother = () => {
+    router.reload(window.location.pathname)
   }
 
   return (
@@ -77,6 +92,10 @@ export default function Problems({ question = {} }) {
         <h1 className={styles.title}>{questionTitle}</h1>
         <DynamicComponentWithNoSSR tree={familyTree} rootId={decedent.fields.name} />
         <RichText content={questionText} />
+        <p>
+          {decedent.fields.name}&apos;s estate is valued at: ${totalValue}
+        </p>
+        {property && property.length > 0 && <p>Relevant property items include: </p>}
         <div className={styles.answersContainer}>
           <form
             onSubmit={(e) => {
@@ -122,6 +141,44 @@ export default function Problems({ question = {} }) {
           </form>
         </div>
       </main>
+      <ReactModal
+        ariaHideApp={false}
+        className={styles.modalContent}
+        isOpen={modal.open}
+        style={{
+          overlay: {
+            position: 'fixed',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)'
+          }
+        }}
+      >
+        {modal.status && (
+          <>
+            <p className={styles.modalText}>Correct!</p>
+            <button onClick={() => handleTryAnother()} className={styles.tryAnother}>
+              Try Another Problem
+            </button>
+            <Link href="/">
+              <a>Return to the homepage</a>
+            </Link>
+          </>
+        )}
+        {!modal.status && (
+          <>
+            <p className={styles.modalText}>That answer was incorrect</p>
+            <button onClick={() => handleTryAgain()} className={styles.tryAgain}>
+              Try Again
+            </button>
+          </>
+        )}
+      </ReactModal>
     </>
   )
 }
@@ -138,9 +195,34 @@ export async function getServerSideProps() {
 
     const question = await data.items[Math.floor(Math.random() * data.items.length)].fields
 
+    const getEstateValue = () => {
+      const { estate } = question
+      const { fields } = estate
+      const { randomValue, minRangeForValue, maxRangeForValue, setValue } = fields
+      if (randomValue) {
+        const randomNumber = Math.round(
+          Math.floor(Math.random() * (maxRangeForValue - minRangeForValue) + minRangeForValue) / 100
+        )
+        return randomNumber
+      }
+
+      if (setValue && !randomValue) {
+        return setValue
+      }
+    }
+
     return {
       props: {
-        question
+        question: {
+          ...question,
+          estate: {
+            ...question.estate,
+            fields: {
+              ...question.estate.fields,
+              totalValue: getEstateValue()
+            }
+          }
+        }
       }
     }
   } catch (e) {
