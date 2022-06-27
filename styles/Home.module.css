@@ -143,3 +143,12 @@
   margin: 25px auto;
   display: block;
 }
+
+.radio {
+  display: block;
+}
+
+.radio input {
+  min-width: 0;
+  margin: 0 10px 0 0;
+}

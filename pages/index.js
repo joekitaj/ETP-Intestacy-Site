@@ -52,7 +52,6 @@ export async function getServerSideProps() {
     })
     const page = pageResult.items[0]
     const jurisdictions = jurisdictionsResult.items
-    console.log(jurisdictions)
     return {
       props: {
         page,

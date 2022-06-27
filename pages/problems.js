@@ -29,14 +29,14 @@ export default function Problems({ question = {} }) {
     estate,
     jurisdiction
   } = question
-  const { totalValue, property } = estate.fields
+  const { totalValue, propertyItems } = estate.fields
   const familyTree = createFamilyTree(family)
 
   const answersArr = answers.map((a) => {
     return {
       id: a.fields.recipient.fields.name,
-      value: `${Math.round(Math.floor((a.fields.value / 100) * totalValue) / 100)}`,
-      property: []
+      value: `${Math.round(Math.floor((a.fields.value / 10) * totalValue) / 10)}`,
+      property: a.fields.propertyItems.map((i) => i.fields.name) || []
     }
   })
 
@@ -45,9 +45,8 @@ export default function Problems({ question = {} }) {
     if (foundIndex > -1) {
       const newFormData = formData
       newFormData[foundIndex] = {
-        id: name,
-        value,
-        property: []
+        ...newFormData[foundIndex],
+        value
       }
       setFormData(newFormData)
     } else {
@@ -55,8 +54,31 @@ export default function Problems({ question = {} }) {
         ...formData,
         {
           id: name,
-          value,
-          property: []
+          property: [],
+          value
+        }
+      ])
+    }
+  }
+
+  const handleCheckClick = (name, value, check) => {
+    const foundIndex = formData.findIndex((x) => x.id === name)
+    if (foundIndex > -1) {
+      const newFormData = formData
+      check
+        ? newFormData[foundIndex].property.push(value)
+        : newFormData[foundIndex].property.splice(
+            newFormData[foundIndex].property.indexOf(value),
+            1
+          )
+      setFormData(newFormData)
+    } else {
+      setFormData([
+        ...formData,
+        {
+          id: name,
+          property: [value],
+          value: 0
         }
       ])
     }
@@ -75,7 +97,9 @@ export default function Problems({ question = {} }) {
     }
     const alphabetizedAnswers = answersArr.sort(compare)
     const scrubbedFormData = formData.filter(
-      (data) => data.value && data.value !== '' && data.value !== 0 && data.value !== '0'
+      (data) =>
+        (data.value && data.value !== '' && data.value !== 0 && data.value !== '0') ||
+        (data.property && data.property.length > 0)
     )
     const alphabetizedData = scrubbedFormData.sort(compare)
     // eslint-disable-next-line no-undef
@@ -114,7 +138,16 @@ export default function Problems({ question = {} }) {
             <p>
               {decedent.fields.name}&apos;s estate is valued at: ${totalValue}
             </p>
-            {property && property.length > 0 && <p>Relevant property items include: </p>}
+            {propertyItems && propertyItems.length > 0 && (
+              <>
+                <p>Relevant property items include: </p>
+                <ul>
+                  {propertyItems.map((p, i) => (
+                    <li key={`property-list-item-${i}`}>{p.fields.name}</li>
+                  ))}
+                </ul>
+              </>
+            )}
             <div className={styles.answersContainer}>
               <form
                 onSubmit={(e) => {
@@ -134,23 +167,24 @@ export default function Problems({ question = {} }) {
                               type="number"
                               onChange={(e) => handleInputChange(person.id, e.target.value)}
                             />
-                            {/*{property && property.length > 0 && (
-                        <div>
-                          <label className={styles.selectLabel}>Estate Property: </label>
-                          <select
-                            onChange={(e) => handleInputChange(person.id, e.target.value, true)}
-                          >
-                            <option default value={null}>
-                              No property
-                            </option>
-                            {property.map((p) => (
-                              <option key={p.title} value={p.title}>
-                                {p.title}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}*/}
+                            {propertyItems && propertyItems.length > 0 && (
+                              <div>
+                                {propertyItems.map((p, i) => (
+                                  <label
+                                    className={styles.radio}
+                                    key={`${person.id}-property-check-item-${i}`}
+                                  >
+                                    <input
+                                      onChange={(e) =>
+                                        handleCheckClick(person.id, p.fields.name, e.target.checked)
+                                      }
+                                      type="checkbox"
+                                    />
+                                    {p.fields.name}
+                                  </label>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )
                       )
