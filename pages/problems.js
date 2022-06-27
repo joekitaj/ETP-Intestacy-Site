@@ -16,9 +16,19 @@ const DynamicComponentWithNoSSR = dynamic(() => import('../components/FamilyTree
 
 export default function Problems({ question = {} }) {
   const router = useRouter()
+  const [attempts, setAttempts] = useState(0)
   const [formData, setFormData] = useState([])
   const [modal, setModal] = useState({ status: false, open: false })
-  const { questionTitle = '', questionText, family = [], decedent, answers, estate } = question
+  const {
+    result = true,
+    questionTitle = '',
+    questionText,
+    family = [],
+    decedent,
+    answers,
+    estate,
+    jurisdiction
+  } = question
   const { totalValue, property } = estate.fields
   const familyTree = createFamilyTree(family)
 
@@ -76,6 +86,7 @@ export default function Problems({ question = {} }) {
 
   const handleTryAgain = () => {
     setModal({ status: false, open: false })
+    setAttempts(attempts + 1)
   }
 
   const handleTryAnother = () => {
@@ -89,57 +100,67 @@ export default function Problems({ question = {} }) {
         <meta name="description" content="ETP Site" />
       </Head>
       <main className={styles.main}>
-        <h1 className={styles.title}>{questionTitle}</h1>
-        <DynamicComponentWithNoSSR tree={familyTree} rootId={decedent.fields.name} />
-        <RichText content={questionText} />
-        <p>
-          {decedent.fields.name}&apos;s estate is valued at: ${totalValue}
-        </p>
-        {property && property.length > 0 && <p>Relevant property items include: </p>}
-        <div className={styles.answersContainer}>
-          <form
-            onSubmit={(e) => {
-              handleSubmit(e)
-            }}
-          >
-            <div className={styles.flexContainer}>
-              {familyTree &&
-                familyTree.map((person, i) => {
-                  return (
-                    person.id !== familyTree[0].id && (
-                      <div className={styles.inputContainer} key={`list-item-${i}`}>
-                        <p className={styles.familyName}>{person.id}</p>
-                        <label className={styles.listHeading}>$: </label>
-                        <input
-                          name={person.id}
-                          type="number"
-                          onChange={(e) => handleInputChange(person.id, e.target.value)}
-                        />
-                        {/*{property && property.length > 0 && (
-                      <div>
-                        <label className={styles.selectLabel}>Estate Property: </label>
-                        <select
-                          onChange={(e) => handleInputChange(person.id, e.target.value, true)}
-                        >
-                          <option default value={null}>
-                            No property
-                          </option>
-                          {property.map((p) => (
-                            <option key={p.title} value={p.title}>
-                              {p.title}
+        {result ? (
+          <h1 className={styles.title}>
+            {questionTitle} - {jurisdiction.fields.name}
+          </h1>
+        ) : (
+          <h1 className={styles.title}>{questionTitle}</h1>
+        )}
+        {result && (
+          <>
+            <DynamicComponentWithNoSSR tree={familyTree} rootId={decedent.fields.name} />
+            <RichText content={questionText} />
+            <p>
+              {decedent.fields.name}&apos;s estate is valued at: ${totalValue}
+            </p>
+            {property && property.length > 0 && <p>Relevant property items include: </p>}
+            <div className={styles.answersContainer}>
+              <form
+                onSubmit={(e) => {
+                  handleSubmit(e)
+                }}
+              >
+                <div className={styles.flexContainer}>
+                  {familyTree &&
+                    familyTree.map((person, i) => {
+                      return (
+                        person.id !== familyTree[0].id && (
+                          <div className={styles.inputContainer} key={`list-item-${i}`}>
+                            <p className={styles.familyName}>{person.id}</p>
+                            <label className={styles.listHeading}>$: </label>
+                            <input
+                              name={person.id}
+                              type="number"
+                              onChange={(e) => handleInputChange(person.id, e.target.value)}
+                            />
+                            {/*{property && property.length > 0 && (
+                        <div>
+                          <label className={styles.selectLabel}>Estate Property: </label>
+                          <select
+                            onChange={(e) => handleInputChange(person.id, e.target.value, true)}
+                          >
+                            <option default value={null}>
+                              No property
                             </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}*/}
-                      </div>
-                    )
-                  )
-                })}
+                            {property.map((p) => (
+                              <option key={p.title} value={p.title}>
+                                {p.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}*/}
+                          </div>
+                        )
+                      )
+                    })}
+                </div>
+                <input type="submit" value="Submit" className={styles.submit} />
+              </form>
             </div>
-            <input type="submit" value="Submit" className={styles.submit} />
-          </form>
-        </div>
+          </>
+        )}
       </main>
       <ReactModal
         ariaHideApp={false}
@@ -170,11 +191,26 @@ export default function Problems({ question = {} }) {
             </Link>
           </>
         )}
-        {!modal.status && (
+        {!modal.status && attempts < 2 && (
           <>
             <p className={styles.modalText}>That answer was incorrect</p>
             <button onClick={() => handleTryAgain()} className={styles.tryAgain}>
               Try Again
+            </button>
+          </>
+        )}
+        {!modal.status && attempts >= 2 && (
+          <>
+            <p className={styles.modalText}>
+              Too many missed attempts. The correct answer is as follows:
+            </p>
+            {answersArr.map((a, i) => (
+              <p key={`correct-${i}`} className={styles.modalText}>
+                {a.id} : ${a.value}
+              </p>
+            ))}
+            <button onClick={() => handleTryAnother()} className={styles.tryAgain}>
+              Try Another Problem
             </button>
           </>
         )}
@@ -183,7 +219,7 @@ export default function Problems({ question = {} }) {
   )
 }
 
-export async function getServerSideProps() {
+export async function getServerSideProps({ query }) {
   try {
     const questionResult = await ContentfulAPI.getEntries({
       content_type: 'question',
@@ -193,22 +229,47 @@ export async function getServerSideProps() {
     const cleanData = safeJsonStringify(questionResult)
     const data = JSON.parse(cleanData)
 
-    const question = await data.items[Math.floor(Math.random() * data.items.length)].fields
+    let question
+    if (query.jurisdiction) {
+      const filteredData = await data.items.filter(
+        (item) =>
+          item.fields.jurisdiction.fields.name.toLowerCase() === query.jurisdiction.toLowerCase()
+      )
+      question =
+        filteredData.length > 0
+          ? filteredData[Math.floor(Math.random() * data.items.length)].fields
+          : {
+              result: false,
+              questionTitle: 'No question found for this jurisdiction',
+              questionText: 'Please go back to the homepage and load a different jurisdiction',
+              family: [],
+              decedent: {},
+              answers: [],
+              estate: { fields: [] }
+            }
+    } else {
+      question = await data.items[Math.floor(Math.random() * data.items.length)].fields
+    }
 
     const getEstateValue = () => {
       const { estate } = question
       const { fields } = estate
       const { randomValue, minRangeForValue, maxRangeForValue, setValue } = fields
       if (randomValue) {
-        const randomNumber = Math.round(
-          Math.floor(Math.random() * (maxRangeForValue - minRangeForValue) + minRangeForValue) / 100
-        )
+        const divide = 10000
+        const getRandomInt = (min, max) => {
+          return Math.floor(Math.random() * (max - min + 1) + min)
+        }
+        const randomNumber =
+          getRandomInt(minRangeForValue / divide, maxRangeForValue / divide) * divide
         return randomNumber
       }
 
       if (setValue && !randomValue) {
         return setValue
       }
+
+      return 0
     }
 
     return {
