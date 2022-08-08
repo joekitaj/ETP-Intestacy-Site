@@ -3,7 +3,7 @@ import { ContentfulAPI } from '../utils/contentful'
 import createFamilyTree from '../utils/createFamilyTree'
 import RichText from '../utils/richtext'
 // eslint-disable-next-line no-unused-vars
-import isEqual from 'lodash'
+import { isEqual, isEmpty } from 'lodash'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import Link from 'next/link'
@@ -14,10 +14,11 @@ import safeJsonStringify from 'safe-json-stringify'
 
 const DynamicComponentWithNoSSR = dynamic(() => import('../components/FamilyTree'), { ssr: false })
 
-export default function Problems({ question = {} }) {
+export default function Problems({ question = {}, jurisdictions, query }) {
   const router = useRouter()
   const [attempts, setAttempts] = useState(0)
   const [formData, setFormData] = useState([])
+  const [selectValue, setSelectValue] = useState('No jurisdiction selected')
   const [modal, setModal] = useState({ status: false, open: false })
   const {
     result = true,
@@ -32,13 +33,16 @@ export default function Problems({ question = {} }) {
   const { totalValue, propertyItems } = estate.fields
   const familyTree = createFamilyTree(family)
 
-  const answersArr = answers.map((a) => {
-    return {
-      id: a.fields.recipient.fields.name,
-      value: `${Math.round(Math.floor((a.fields.value / 10) * totalValue) / 10)}`,
-      property: a.fields.propertyItems.map((i) => i.fields.name) || []
-    }
-  })
+  const answersArr =
+    answers && answers.length > 0
+      ? answers.map((a) => {
+          return {
+            id: a.fields.recipient.fields.name,
+            value: `${Math.round(Math.floor((a.fields.value / 10) * totalValue) / 10)}`,
+            property: a.fields.propertyItems ? a.fields.propertyItems.map((i) => i.fields.name) : []
+          }
+        })
+      : []
 
   const handleInputChange = (name, value) => {
     const foundIndex = formData.findIndex((x) => x.id === name)
@@ -117,6 +121,15 @@ export default function Problems({ question = {} }) {
     router.reload(window.location.pathname)
   }
 
+  const handleSelect = (e) => {
+    e.preventDefault()
+    setSelectValue(e.target.value)
+    router.push(`/problems?jurisdiction=${e.target.value}`)
+  }
+
+  // eslint-disable-next-line no-undef
+  const queryCheck = isEmpty(query) || !query.jurisdiction || query.jurisdiction == ''
+
   return (
     <>
       <Head>
@@ -124,14 +137,49 @@ export default function Problems({ question = {} }) {
         <meta name="description" content="ETP Site" />
       </Head>
       <main className={styles.main}>
-        {result ? (
+        {queryCheck && (
+          <>
+            <h1 className={styles.title}>Select a jurisdiction to start practicing!</h1>
+            <select value={selectValue} onChange={(e) => handleSelect(e)}>
+              <option default value="No jurisdiction selected">
+                No jurisdiction selected
+              </option>
+              {jurisdictions &&
+                jurisdictions.length > 0 &&
+                jurisdictions.map((j, i) => (
+                  <option key={`jurisdiction-${i}`} value={j.fields.name}>
+                    {j.fields.name}
+                  </option>
+                ))}
+            </select>
+          </>
+        )}
+        {!queryCheck && result && (
           <h1 className={styles.title}>
             {questionTitle} - {jurisdiction.fields.name}
           </h1>
-        ) : (
-          <h1 className={styles.title}>{questionTitle}</h1>
         )}
-        {result && (
+        {!queryCheck && !result && (
+          <>
+            <button onClick={() => handleTryAnother()} className={styles.skip}>
+              Skip and Try Another Problem
+            </button>
+            <h1 className={styles.title}>{questionText}</h1>
+            <select value={selectValue} onChange={(e) => handleSelect(e)}>
+              <option default value="No jurisdiction selected">
+                No jurisdiction selected
+              </option>
+              {jurisdictions &&
+                jurisdictions.length > 0 &&
+                jurisdictions.map((j, i) => (
+                  <option key={`jurisdiction-${i}`} value={j.fields.name}>
+                    {j.fields.name}
+                  </option>
+                ))}
+            </select>
+          </>
+        )}
+        {!queryCheck && result && (
           <>
             <DynamicComponentWithNoSSR tree={familyTree} rootId={decedent.fields.name} />
             <RichText content={questionText} />
@@ -259,6 +307,11 @@ export async function getServerSideProps({ query }) {
       content_type: 'question',
       include: 10
     })
+    const jurisdictionsResult = await ContentfulAPI.getEntries({
+      content_type: 'jurisdiction',
+      include: 10
+    })
+    const jurisdictions = jurisdictionsResult.items
 
     const cleanData = safeJsonStringify(questionResult)
     const data = JSON.parse(cleanData)
@@ -270,12 +323,13 @@ export async function getServerSideProps({ query }) {
           item.fields.jurisdiction.fields.name.toLowerCase() === query.jurisdiction.toLowerCase()
       )
       question =
-        filteredData.length > 0
+        filteredData && filteredData.length > 0
           ? filteredData[Math.floor(Math.random() * data.items.length)].fields
           : {
               result: false,
               questionTitle: 'No question found for this jurisdiction',
-              questionText: 'Please go back to the homepage and load a different jurisdiction',
+              questionText:
+                'There seems to be a problem! Please try another question or load a different jurisdiction.',
               family: [],
               decedent: {},
               answers: [],
@@ -308,6 +362,8 @@ export async function getServerSideProps({ query }) {
 
     return {
       props: {
+        query,
+        jurisdictions,
         question: {
           ...question,
           estate: {
