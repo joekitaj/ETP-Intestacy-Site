@@ -155,7 +155,7 @@ export default function Problems({ question = {}, jurisdictions, query }) {
           </>
         )}
         {!queryCheck && result && (
-          <h1 className={styles.title}>
+          <h1 className={styles.hidden}>
             {questionTitle} - {jurisdiction.fields.name}
           </h1>
         )}

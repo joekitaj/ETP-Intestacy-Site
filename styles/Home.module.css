@@ -160,3 +160,9 @@
   min-width: 0;
   margin: 0 10px 0 0;
 }
+
+.hidden {
+  opacity: 0;
+  height: 0px;
+  margin: 24px 0 0;
+}
