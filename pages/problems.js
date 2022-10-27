@@ -30,6 +30,8 @@ export default function Problems({ question = {}, jurisdictions, query }) {
     estate,
     jurisdiction
   } = question
+  console.log(jurisdictions)
+  console.log(decedent)
   const { totalValue, propertyItems } = estate.fields
   const familyTree = createFamilyTree(family)
 
@@ -205,8 +207,10 @@ export default function Problems({ question = {}, jurisdictions, query }) {
                 <div className={styles.flexContainer}>
                   {familyTree &&
                     familyTree.map((person, i) => {
+                      console.log(person)
+                      console.log('Decedent', decedent)
                       return (
-                        person.id !== familyTree[0].id && (
+                        person.id !== decedent.fields.name && (
                           <div className={styles.inputContainer} key={`list-item-${i}`}>
                             <p className={styles.familyName}>{person.id}</p>
                             <label className={styles.listHeading}>$: </label>
@@ -378,5 +382,32 @@ export async function getServerSideProps({ query }) {
     }
   } catch (e) {
     console.log(e)
+    return {
+      props: {
+        query,
+        jurisdictions: [
+          {
+            fields: {
+              name: 'UPC'
+            }
+          },
+          {
+            fields: {
+              name: 'California'
+            }
+          }
+        ],
+        question: {
+          result: false,
+          questionTitle: 'No question found for this jurisdiction',
+          questionText:
+            'There seems to be a problem! Please try another question or load a different jurisdiction.',
+          family: [],
+          decedent: {},
+          answers: [],
+          estate: { fields: [] }
+        }
+      }
+    }
   }
 }
