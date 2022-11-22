@@ -2,9 +2,9 @@ import styles from '../styles/Home.module.css'
 import { ContentfulAPI } from '../utils/contentful'
 import createFamilyTree from '../utils/createFamilyTree'
 import RichText from '../utils/richtext'
+import FamilyTree from '@balkangraph/familytree.js'
 // eslint-disable-next-line no-unused-vars
 import { isEqual, isEmpty } from 'lodash'
-import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -12,26 +12,39 @@ import { useState } from 'react'
 import ReactModal from 'react-modal'
 import safeJsonStringify from 'safe-json-stringify'
 
-const DynamicComponentWithNoSSR = dynamic(() => import('../components/FamilyTree'), { ssr: false })
+function Familytree(props) {
+  if (typeof window === 'object') {
+    // eslint-disable-next-line no-unused-vars
+    var chart = new FamilyTree(document.getElementById('tree'), {
+      nodeBinding: props.nodeBinding,
+      nodes: props.nodes,
+      enableSearch: false,
+      nodeMouseClick: FamilyTree.action.none,
+      tags: {
+        deceased: { template: 'dead' }
+      },
+      mouseScrool: FamilyTree.action.ctrlZoom,
+      scaleInitial: FamilyTree.match.boundary
+    })
+  }
+  return null
+}
+
+var nodeBinding = {
+  field_0: 'name',
+  img_0: 'img'
+}
 
 export default function Problems({ question = {}, jurisdictions, query }) {
   const router = useRouter()
   const [attempts, setAttempts] = useState(0)
   const [formData, setFormData] = useState([])
   const [selectValue, setSelectValue] = useState('No jurisdiction selected')
-  const [modal, setModal] = useState({ status: false, open: false })
-  const {
-    result = true,
-    questionTitle = '',
-    questionText,
-    family = [],
-    decedent,
-    answers,
-    estate,
-    jurisdiction
-  } = question
-  console.log(jurisdictions)
-  console.log(decedent)
+  const [modal, setModal] = useState({
+    status: false,
+    open: false
+  })
+  const { result = true, questionText, family = [], decedent, answers, estate } = question
   const { totalValue, propertyItems } = estate.fields
   const familyTree = createFamilyTree(family)
 
@@ -110,12 +123,21 @@ export default function Problems({ question = {}, jurisdictions, query }) {
     const alphabetizedData = scrubbedFormData.sort(compare)
     // eslint-disable-next-line no-undef
     _.isEqual(alphabetizedData, alphabetizedAnswers)
-      ? setModal({ status: true, open: true })
-      : setModal({ status: false, open: true })
+      ? setModal({
+          status: true,
+          open: true
+        })
+      : setModal({
+          status: false,
+          open: true
+        })
   }
 
   const handleTryAgain = () => {
-    setModal({ status: false, open: false })
+    setModal({
+      status: false,
+      open: false
+    })
     setAttempts(attempts + 1)
   }
 
@@ -130,18 +152,18 @@ export default function Problems({ question = {}, jurisdictions, query }) {
   }
 
   // eslint-disable-next-line no-undef
-  const queryCheck = isEmpty(query) || !query.jurisdiction || query.jurisdiction == ''
+  const queryCheck =
+    (isEmpty(query) || !query.jurisdiction || query.jurisdiction == '') && !query.test
 
   return (
     <>
       <Head>
-        <title>ETP Practice Problems</title>
-        <meta name="description" content="ETP Site" />
+        <title> ETP Practice Problems </title> <meta name="description" content="ETP Site" />
       </Head>
       <main className={styles.main}>
         {queryCheck && (
           <>
-            <h1 className={styles.title}>Select a jurisdiction to start practicing!</h1>
+            <h1 className={styles.title}> Select a jurisdiction to start practicing! </h1>
             <select value={selectValue} onChange={(e) => handleSelect(e)}>
               <option default value="No jurisdiction selected">
                 No jurisdiction selected
@@ -155,11 +177,6 @@ export default function Problems({ question = {}, jurisdictions, query }) {
                 ))}
             </select>
           </>
-        )}
-        {!queryCheck && result && (
-          <h1 className={styles.hidden}>
-            {questionTitle} - {jurisdiction.fields.name}
-          </h1>
         )}
         {!queryCheck && !result && (
           <>
@@ -183,17 +200,17 @@ export default function Problems({ question = {}, jurisdictions, query }) {
         )}
         {!queryCheck && result && (
           <>
-            <DynamicComponentWithNoSSR tree={familyTree} rootId={decedent.fields.name} />
+            <div id="tree"> </div> <Familytree nodes={familyTree} nodeBinding={nodeBinding} />
             <RichText content={questionText} />
             <p>
-              {decedent.fields.name}&apos;s estate is valued at: ${totalValue}
+              {decedent.fields.name} & apos; s estate is valued at: $ {totalValue}
             </p>
             {propertyItems && propertyItems.length > 0 && (
               <>
-                <p>Relevant property items include: </p>
+                <p> Relevant property items include: </p>
                 <ul>
                   {propertyItems.map((p, i) => (
-                    <li key={`property-list-item-${i}`}>{p.fields.name}</li>
+                    <li key={`property-list-item-${i}`}> {p.fields.name} </li>
                   ))}
                 </ul>
               </>
@@ -207,13 +224,11 @@ export default function Problems({ question = {}, jurisdictions, query }) {
                 <div className={styles.flexContainer}>
                   {familyTree &&
                     familyTree.map((person, i) => {
-                      console.log(person)
-                      console.log('Decedent', decedent)
                       return (
                         person.id !== decedent.fields.name && (
                           <div className={styles.inputContainer} key={`list-item-${i}`}>
-                            <p className={styles.familyName}>{person.id}</p>
-                            <label className={styles.listHeading}>$: </label>
+                            <p className={styles.familyName}> {person.id} </p>
+                            <label className={styles.listHeading}> $: </label>
                             <input
                               name={person.id}
                               type="number"
@@ -288,11 +303,11 @@ export default function Problems({ question = {}, jurisdictions, query }) {
         {!modal.status && attempts >= 2 && (
           <>
             <p className={styles.modalText}>
-              Too many missed attempts. The correct answer is as follows:
+              Too many missed attempts.The correct answer is as follows:
             </p>
             {answersArr.map((a, i) => (
               <p key={`correct-${i}`} className={styles.modalText}>
-                {a.id} : ${a.value}
+                {a.id}: $ {a.value}
               </p>
             ))}
             <button onClick={() => handleTryAnother()} className={styles.tryAgain}>
@@ -321,26 +336,36 @@ export async function getServerSideProps({ query }) {
     const data = JSON.parse(cleanData)
 
     let question
-    if (query.jurisdiction) {
-      const filteredData = await data.items.filter(
-        (item) =>
-          item.fields.jurisdiction.fields.name.toLowerCase() === query.jurisdiction.toLowerCase()
-      )
-      question =
-        filteredData && filteredData.length > 0
-          ? filteredData[Math.floor(Math.random() * data.items.length)].fields
-          : {
-              result: false,
-              questionTitle: 'No question found for this jurisdiction',
-              questionText:
-                'There seems to be a problem! Please try another question or load a different jurisdiction.',
-              family: [],
-              decedent: {},
-              answers: [],
-              estate: { fields: [] }
-            }
+
+    if (query.test) {
+      const singleResult = await ContentfulAPI.getEntry(query.test)
+      const cleanSingleData = safeJsonStringify(singleResult)
+      const singleData = JSON.parse(cleanSingleData)
+      question = singleData.fields
     } else {
-      question = await data.items[Math.floor(Math.random() * data.items.length)].fields
+      if (query.jurisdiction) {
+        const filteredData = await data.items.filter(
+          (item) =>
+            item.fields.jurisdiction.fields.name.toLowerCase() === query.jurisdiction.toLowerCase()
+        )
+        question =
+          filteredData && filteredData.length > 0
+            ? filteredData[Math.floor(Math.random() * data.items.length)].fields
+            : {
+                result: false,
+                questionTitle: 'No question found for this jurisdiction',
+                questionText:
+                  'There seems to be a problem! Please try another question or load a different jurisdiction.',
+                family: [],
+                decedent: {},
+                answers: [],
+                estate: {
+                  fields: []
+                }
+              }
+      } else {
+        question = await data.items[Math.floor(Math.random() * data.items.length)].fields
+      }
     }
 
     const getEstateValue = () => {
@@ -405,7 +430,9 @@ export async function getServerSideProps({ query }) {
           family: [],
           decedent: {},
           answers: [],
-          estate: { fields: [] }
+          estate: {
+            fields: []
+          }
         }
       }
     }

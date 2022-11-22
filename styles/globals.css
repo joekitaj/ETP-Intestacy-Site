@@ -13,3 +13,24 @@ a {
 * {
   box-sizing: border-box;
 }
+
+svg.tommy .node.neutral > rect {
+  fill: #329da8;
+}
+
+svg.tommy .node.male > rect {
+  fill: #a4ecff;
+}
+
+svg.tommy .node.female > rect {
+  fill: #fdaed8;
+}
+
+svg.tommy .node.dead > rect {
+  fill: #595959;
+  opacity: 0.75;
+}
+
+#tree {
+  height: 400px !important;
+}

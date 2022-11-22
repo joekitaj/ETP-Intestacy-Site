@@ -2,38 +2,37 @@ function scrubFields(p) {
   const { fields } = p
   let personObj = {
     id: fields.name,
-    spouses: [],
-    children: [],
-    parents: [],
-    siblings: [],
+    pids: [],
+    mid: '',
+    fid: '',
+    name: fields.name,
     gender: fields.gender === 'Female' || fields.gender === 'Male' ? fields.gender : 'neutral',
-    isDead: fields.dead
+    tags: []
+  }
+
+  if (fields.dead) {
+    personObj.tags.push('dead')
   }
 
   if (fields.spouses && fields.spouses.length > 0) {
     fields.spouses.map((spouse) => {
-      personObj.spouses.push({ id: spouse.fields.name })
+      personObj.pids.push(spouse.fields.name)
     })
   }
 
   if (fields.parents && fields.parents.length > 0) {
-    fields.parents.map((spouse) => {
-      personObj.parents.push({ id: spouse.fields.name })
+    fields.parents.map((parent) => {
+      if (personObj.mid == '') {
+        personObj.mid = parent.fields.name
+        return parent
+      }
+
+      if (personObj.mid !== '' && personObj.fid == '') {
+        personObj.fid = parent.fields.name
+        return parent
+      }
     })
   }
-
-  if (fields.children && fields.children.length > 0) {
-    fields.children.map((spouse) => {
-      personObj.children.push({ id: spouse.fields.name })
-    })
-  }
-
-  if (fields.siblings && fields.siblings.length > 0) {
-    fields.siblings.map((spouse) => {
-      personObj.siblings.push({ id: spouse.fields.name })
-    })
-  }
-
   return personObj
 }
 
