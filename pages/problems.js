@@ -45,7 +45,7 @@ export default function Problems({ question = {}, jurisdictions, query }) {
     open: false
   })
   const { result = true, questionText, family = [], decedent, answers, estate } = question
-  const { totalValue, propertyItems } = estate.fields
+  const { totalValue, quasiValue, communityValue, propertyItems } = estate.fields
   const familyTree = createFamilyTree(family)
 
   const answersArr =
@@ -54,18 +54,25 @@ export default function Problems({ question = {}, jurisdictions, query }) {
           return {
             id: a.fields.recipient.fields.name,
             value: `${Math.round(Math.floor((a.fields.value / 10) * totalValue) / 10)}`,
+            communityValue: a.fields.communityValue
+              ? `${Math.round(Math.floor((a.fields.communityValue / 10) * communityValue) / 10)}`
+              : null,
+            quasiValue: a.fields.quasiValue
+              ? `${Math.round(Math.floor((a.fields.quasiValue / 10) * quasiValue) / 10)}`
+              : null,
             property: a.fields.propertyItems ? a.fields.propertyItems.map((i) => i.fields.name) : []
           }
         })
       : []
-
-  const handleInputChange = (name, value) => {
+  const handleInputChange = (name, value, type) => {
     const foundIndex = formData.findIndex((x) => x.id === name)
     if (foundIndex > -1) {
       const newFormData = formData
       newFormData[foundIndex] = {
         ...newFormData[foundIndex],
-        value
+        value: type == 'standard' ? value : newFormData[foundIndex].value,
+        communityValue: type == 'community' ? value : newFormData[foundIndex].communityValue,
+        quasiValue: type == 'quasi' ? value : newFormData[foundIndex].quasiValue
       }
       setFormData(newFormData)
     } else {
@@ -74,7 +81,9 @@ export default function Problems({ question = {}, jurisdictions, query }) {
         {
           id: name,
           property: [],
-          value
+          value: type == 'standard' ? value : '0',
+          communityValue: type == 'community' ? value : '0',
+          quasiValue: type == 'quasi' ? value : '0'
         }
       ])
     }
@@ -118,8 +127,17 @@ export default function Problems({ question = {}, jurisdictions, query }) {
     const scrubbedFormData = formData.filter(
       (data) =>
         (data.value && data.value !== '' && data.value !== 0 && data.value !== '0') ||
+        (data.communityValue &&
+          data.communityValue !== '' &&
+          data.communityValue !== 0 &&
+          data.communityValue !== '0') ||
+        (data.quasiValue &&
+          data.quasiValue !== '' &&
+          data.quasiValue !== 0 &&
+          data.quasiValue !== '0') ||
         (data.property && data.property.length > 0)
     )
+    console.log(scrubbedFormData)
     const alphabetizedData = scrubbedFormData.sort(compare)
     // eslint-disable-next-line no-undef
     _.isEqual(alphabetizedData, alphabetizedAnswers)
@@ -203,15 +221,27 @@ export default function Problems({ question = {}, jurisdictions, query }) {
             <div id="tree"> </div> <Familytree nodes={familyTree} nodeBinding={nodeBinding} />
             <RichText content={questionText} />
             <p>
-              {decedent.fields.name} & apos; s estate is valued at: $ {totalValue}
+              {`${decedent.fields.name}'s`} estate is valued at: ${totalValue}
             </p>
+            {communityValue !== 0 && (
+              <p>
+                {`${decedent.fields.name}'s`} estate holds community property worth: $
+                {communityValue}
+              </p>
+            )}
+            {quasiValue !== 0 && (
+              <p>
+                {`${decedent.fields.name}'s`} estate holds quasi-community property worth: $
+                {quasiValue}
+              </p>
+            )}
             {propertyItems && propertyItems.length > 0 && (
               <>
                 <p> Relevant property items include: </p>
                 <ul>
-                  {propertyItems.map((p, i) => (
-                    <li key={`property-list-item-${i}`}> {p.fields.name} </li>
-                  ))}
+                  {propertyItems.map((p, i) => {
+                    return <li key={`property-list-item-${i}`}> {p.fields.name} </li>
+                  })}
                 </ul>
               </>
             )}
@@ -228,28 +258,69 @@ export default function Problems({ question = {}, jurisdictions, query }) {
                         person.id !== decedent.fields.name && (
                           <div className={styles.inputContainer} key={`list-item-${i}`}>
                             <p className={styles.familyName}> {person.id} </p>
-                            <label className={styles.listHeading}> $: </label>
+                            <label className={styles.listHeading}>
+                              Separate Property Share $:{' '}
+                            </label>
                             <input
-                              name={person.id}
+                              name={`${person.id} Separate Property Share`}
                               type="number"
-                              onChange={(e) => handleInputChange(person.id, e.target.value)}
+                              onChange={(e) =>
+                                handleInputChange(person.id, e.target.value, 'standard')
+                              }
                             />
+                            {communityValue !== 0 && (
+                              <>
+                                <label className={styles.listHeading}>
+                                  {' '}
+                                  Community Property Share $:{' '}
+                                </label>
+                                <input
+                                  name={`${person.id} Community Property Share`}
+                                  type="number"
+                                  onChange={(e) =>
+                                    handleInputChange(person.id, e.target.value, 'community')
+                                  }
+                                />
+                              </>
+                            )}
+                            {quasiValue !== 0 && (
+                              <>
+                                <label className={styles.listHeading}>
+                                  {' '}
+                                  Quasi-Community Property Share $:{' '}
+                                </label>
+                                <input
+                                  name={`${person.id} Quasi-Community Property Share`}
+                                  type="number"
+                                  onChange={(e) =>
+                                    handleInputChange(person.id, e.target.value, 'quasi')
+                                  }
+                                />
+                              </>
+                            )}
                             {propertyItems && propertyItems.length > 0 && (
                               <div>
-                                {propertyItems.map((p, i) => (
-                                  <label
-                                    className={styles.radio}
-                                    key={`${person.id}-property-check-item-${i}`}
-                                  >
-                                    <input
-                                      onChange={(e) =>
-                                        handleCheckClick(person.id, p.fields.name, e.target.checked)
-                                      }
-                                      type="checkbox"
-                                    />
-                                    {p.fields.name}
-                                  </label>
-                                ))}
+                                <p>Inherited Property Items:</p>
+                                {propertyItems.map((p, i) => {
+                                  return (
+                                    <label
+                                      className={styles.radio}
+                                      key={`${person.id}-property-check-item-${i}`}
+                                    >
+                                      <input
+                                        onChange={(e) =>
+                                          handleCheckClick(
+                                            person.id,
+                                            p?.fields?.name,
+                                            e.target.checked
+                                          )
+                                        }
+                                        type="checkbox"
+                                      />
+                                      {p.fields.name}
+                                    </label>
+                                  )
+                                })}
                               </div>
                             )}
                           </div>
@@ -303,12 +374,29 @@ export default function Problems({ question = {}, jurisdictions, query }) {
         {!modal.status && attempts >= 2 && (
           <>
             <p className={styles.modalText}>
-              Too many missed attempts.The correct answer is as follows:
+              Too many missed attempts. The correct answer is as follows:
             </p>
             {answersArr.map((a, i) => (
-              <p key={`correct-${i}`} className={styles.modalText}>
-                {a.id}: $ {a.value}
-              </p>
+              <div key={`correct-${i}`}>
+                <p className={styles.modalText}>
+                  {a.id}: Separate Property $ {a.value}
+                </p>
+                {a.communityValue && (
+                  <p className={styles.modalText}>
+                    {a.id}: Community Property $ {a.communityValue}
+                  </p>
+                )}
+                {a.quasiValue && (
+                  <p className={styles.modalText}>
+                    {a.id}: Quasi-Community Property $ {a.quasiValue}
+                  </p>
+                )}
+                {a.property && a.property.length > 0 && (
+                  <p className={styles.modalText}>
+                    {a.id}: {a.property.map((p) => p)}
+                  </p>
+                )}
+              </div>
             ))}
             <button onClick={() => handleTryAnother()} className={styles.tryAgain}>
               Try Another Problem
@@ -338,10 +426,14 @@ export async function getServerSideProps({ query }) {
     let question
 
     if (query.test) {
-      const singleResult = await ContentfulAPI.getEntry(query.test)
-      const cleanSingleData = safeJsonStringify(singleResult)
+      const singleResult = await ContentfulAPI.getEntries({
+        content_type: 'question',
+        'sys.id': query.test,
+        include: 10
+      })
+      const cleanSingleData = safeJsonStringify(singleResult?.items[0])
       const singleData = JSON.parse(cleanSingleData)
-      question = singleData.fields
+      question = singleData?.fields
     } else {
       if (query.jurisdiction) {
         const filteredData = await data.items.filter(
@@ -368,10 +460,17 @@ export async function getServerSideProps({ query }) {
       }
     }
 
-    const getEstateValue = () => {
+    const getEstateValue = (param) => {
       const { estate } = question
       const { fields } = estate
-      const { randomValue, minRangeForValue, maxRangeForValue, setValue } = fields
+      const {
+        randomValue,
+        minRangeForValue,
+        maxRangeForValue,
+        setValue,
+        quasiValue,
+        communityValue
+      } = fields
       if (randomValue) {
         const divide = 10000
         const getRandomInt = (min, max) => {
@@ -382,7 +481,15 @@ export async function getServerSideProps({ query }) {
         return randomNumber
       }
 
-      if (setValue && !randomValue) {
+      if (param === 'quasi' && quasiValue && !randomValue) {
+        return quasiValue
+      }
+
+      if (param === 'community' && communityValue && !randomValue) {
+        return communityValue
+      }
+
+      if (param === 'set' && setValue && !randomValue) {
         return setValue
       }
 
@@ -399,7 +506,9 @@ export async function getServerSideProps({ query }) {
             ...question.estate,
             fields: {
               ...question.estate.fields,
-              totalValue: getEstateValue()
+              totalValue: getEstateValue('set'),
+              communityValue: getEstateValue('community'),
+              quasiValue: getEstateValue('quasi')
             }
           }
         }

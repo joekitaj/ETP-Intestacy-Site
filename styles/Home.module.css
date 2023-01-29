@@ -84,6 +84,11 @@
   min-width: 180px;
 }
 
+.listHeading {
+  display: block;
+  margin: 0 0 8px;
+}
+
 .inputContainer select {
   padding: 8px;
   min-width: 180px;
