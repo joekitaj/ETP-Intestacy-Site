@@ -1,3 +1,4 @@
+import Loading from '../components/Loading'
 import styles from '../styles/Home.module.css'
 import { ContentfulAPI } from '../utils/contentful'
 import createFamilyTree from '../utils/createFamilyTree'
@@ -8,9 +9,13 @@ import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import ReactModal from 'react-modal'
 import safeJsonStringify from 'safe-json-stringify'
+
+const FamilyTree = dynamic(() => import('../components/FamilyTree'), {
+  ssr: false
+})
 
 export default function Problems({ question = {}, jurisdictions, query }) {
   const router = useRouter()
@@ -24,10 +29,6 @@ export default function Problems({ question = {}, jurisdictions, query }) {
   const { result = true, questionText, family = [], decedent, answers, estate } = question
   const { totalValue, quasiValue, communityValue, propertyItems } = estate.fields
 
-  const FamilyTree = dynamic(() => import('../components/FamilyTree'), {
-    ssr: false
-  })
-
   const familyTree = createFamilyTree(family)
 
   const answersArr =
@@ -38,10 +39,10 @@ export default function Problems({ question = {}, jurisdictions, query }) {
             value: `${Math.round(Math.floor((a.fields.value / 10) * totalValue) / 10)}`,
             communityValue: a.fields.communityValue
               ? `${Math.round(Math.floor((a.fields.communityValue / 10) * communityValue) / 10)}`
-              : null,
+              : '0',
             quasiValue: a.fields.quasiValue
               ? `${Math.round(Math.floor((a.fields.quasiValue / 10) * quasiValue) / 10)}`
-              : null,
+              : '0',
             property: a.fields.propertyItems ? a.fields.propertyItems.map((i) => i.fields.name) : []
           }
         })
@@ -121,7 +122,6 @@ export default function Problems({ question = {}, jurisdictions, query }) {
           data.quasiValue !== '0') ||
         (data.property && data.property.length > 0)
     )
-    console.log(scrubbedFormData)
     const alphabetizedData = scrubbedFormData.sort(compare)
     // eslint-disable-next-line no-undef
     _.isEqual(alphabetizedData, alphabetizedAnswers)
@@ -144,7 +144,7 @@ export default function Problems({ question = {}, jurisdictions, query }) {
   }
 
   const handleTryAnother = () => {
-    router.reload(window.location.pathname)
+    router.refresh()
   }
 
   const handleSelect = (e) => {
@@ -202,7 +202,9 @@ export default function Problems({ question = {}, jurisdictions, query }) {
         )}
         {!queryCheck && result && (
           <>
-            <FamilyTree nodes={familyTree} />
+            <Suspense fallback={<Loading />}>
+              <FamilyTree nodes={familyTree} />
+            </Suspense>
             <RichText content={questionText} />
             <p>
               {`${decedent.fields.name}'s`} estate is valued at: ${totalValue}

@@ -19,7 +19,7 @@ export default class Chart extends Component {
       tags: {
         deceased: { template: 'dead' }
       },
-      mouseScrool: FamilyTree.action.ctrlZoom,
+      mouseScrool: FamilyTree.action.none,
       scaleInitial: FamilyTree.match.boundary,
       nodeBinding: {
         field_0: 'name',
