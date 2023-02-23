@@ -6,16 +6,16 @@ function MyApp({ Component, pageProps }) {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <Link href="/">
+        <Link legacyBehavior href="/">
           <a>Home</a>
         </Link>
-        <Link href="/problems">
+        <Link legacyBehavior href="/problems">
           <a>Practice Problems</a>
         </Link>
-        <Link href="/codes">
+        <Link legacyBehavior href="/codes">
           <a>Code Provisions</a>
         </Link>
-        <Link href="/about">
+        <Link legacyBehavior href="/about">
           <a>About</a>
         </Link>
       </header>

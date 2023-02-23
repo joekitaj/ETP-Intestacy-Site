@@ -2,38 +2,15 @@ import styles from '../styles/Home.module.css'
 import { ContentfulAPI } from '../utils/contentful'
 import createFamilyTree from '../utils/createFamilyTree'
 import RichText from '../utils/richtext'
-import FamilyTree from '@balkangraph/familytree.js'
 // eslint-disable-next-line no-unused-vars
 import { isEqual, isEmpty } from 'lodash'
+import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import ReactModal from 'react-modal'
 import safeJsonStringify from 'safe-json-stringify'
-
-function Familytree(props) {
-  if (typeof window === 'object') {
-    // eslint-disable-next-line no-unused-vars
-    var chart = new FamilyTree(document.getElementById('tree'), {
-      nodeBinding: props.nodeBinding,
-      nodes: props.nodes,
-      enableSearch: false,
-      nodeMouseClick: FamilyTree.action.none,
-      tags: {
-        deceased: { template: 'dead' }
-      },
-      mouseScrool: FamilyTree.action.ctrlZoom,
-      scaleInitial: FamilyTree.match.boundary
-    })
-  }
-  return null
-}
-
-var nodeBinding = {
-  field_0: 'name',
-  img_0: 'img'
-}
 
 export default function Problems({ question = {}, jurisdictions, query }) {
   const router = useRouter()
@@ -46,6 +23,11 @@ export default function Problems({ question = {}, jurisdictions, query }) {
   })
   const { result = true, questionText, family = [], decedent, answers, estate } = question
   const { totalValue, quasiValue, communityValue, propertyItems } = estate.fields
+
+  const FamilyTree = dynamic(() => import('../components/FamilyTree'), {
+    ssr: false
+  })
+
   const familyTree = createFamilyTree(family)
 
   const answersArr =
@@ -64,6 +46,7 @@ export default function Problems({ question = {}, jurisdictions, query }) {
           }
         })
       : []
+
   const handleInputChange = (name, value, type) => {
     const foundIndex = formData.findIndex((x) => x.id === name)
     if (foundIndex > -1) {
@@ -123,6 +106,7 @@ export default function Problems({ question = {}, jurisdictions, query }) {
       }
       return 0
     }
+
     const alphabetizedAnswers = answersArr.sort(compare)
     const scrubbedFormData = formData.filter(
       (data) =>
@@ -166,7 +150,7 @@ export default function Problems({ question = {}, jurisdictions, query }) {
   const handleSelect = (e) => {
     e.preventDefault()
     setSelectValue(e.target.value)
-    router.push(`/problems?jurisdiction=${e.target.value}`)
+    router.push(`/problems?jurisdiction=${e.target.value}`, undefined, { shallow: true })
   }
 
   // eslint-disable-next-line no-undef
@@ -218,7 +202,7 @@ export default function Problems({ question = {}, jurisdictions, query }) {
         )}
         {!queryCheck && result && (
           <>
-            <div id="tree"> </div> <Familytree nodes={familyTree} nodeBinding={nodeBinding} />
+            <FamilyTree nodes={familyTree} />
             <RichText content={questionText} />
             <p>
               {`${decedent.fields.name}'s`} estate is valued at: ${totalValue}
@@ -358,7 +342,7 @@ export default function Problems({ question = {}, jurisdictions, query }) {
             <button onClick={() => handleTryAnother()} className={styles.tryAnother}>
               Try Another Problem
             </button>
-            <Link href="/">
+            <Link legacyBehavior href="/">
               <a>Return to the homepage</a>
             </Link>
           </>
