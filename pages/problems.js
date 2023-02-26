@@ -450,14 +450,16 @@ export async function getServerSideProps({ query }) {
       const { estate } = question
       const { fields } = estate
       const {
-        randomValue,
         minRangeForValue,
         maxRangeForValue,
         setValue,
+        separatePropertyRandom,
         quasiValue,
-        communityValue
+        quasiPropertyRandom,
+        communityValue,
+        communityPropertyRandom
       } = fields
-      if (randomValue) {
+      const getRandomValue = () => {
         const divide = 10000
         const getRandomInt = (min, max) => {
           return Math.floor(Math.random() * (max - min + 1) + min)
@@ -467,16 +469,16 @@ export async function getServerSideProps({ query }) {
         return randomNumber
       }
 
-      if (param === 'quasi' && quasiValue && !randomValue) {
-        return quasiValue
+      if (param === 'quasi') {
+        return quasiPropertyRandom ? getRandomValue() : quasiValue
       }
 
-      if (param === 'community' && communityValue && !randomValue) {
-        return communityValue
+      if (param === 'community') {
+        return communityPropertyRandom ? getRandomValue() : communityValue
       }
 
-      if (param === 'set' && setValue && !randomValue) {
-        return setValue
+      if (param === 'set') {
+        return separatePropertyRandom ? getRandomValue() : setValue
       }
 
       return 0
