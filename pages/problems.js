@@ -31,19 +31,36 @@ export default function Problems({ question = {}, jurisdictions, query }) {
 
   const familyTree = createFamilyTree(family)
 
+  const getAnswerValue = (isSet = false, val, base) => {
+    if (!val || !base || val == 0) {
+      return 0
+    }
+
+    if (isSet) {
+      return val
+    }
+
+    return Math.round(Math.floor((val / 10) * base) / 10)
+  }
+
   const answersArr =
     answers && answers.length > 0
       ? answers.map((a) => {
+          const { fields } = a
           return {
-            id: a.fields.recipient.fields.name,
-            value: `${Math.round(Math.floor((a.fields.value / 10) * totalValue) / 10)}`,
-            communityValue: a.fields.communityValue
-              ? `${Math.round(Math.floor((a.fields.communityValue / 10) * communityValue) / 10)}`
-              : '0',
-            quasiValue: a.fields.quasiValue
-              ? `${Math.round(Math.floor((a.fields.quasiValue / 10) * quasiValue) / 10)}`
-              : '0',
-            property: a.fields.propertyItems ? a.fields.propertyItems.map((i) => i.fields.name) : []
+            id: fields.recipient.fields.name,
+            value: `${getAnswerValue(fields.fixedSeparatePropertyValue, fields.value, totalValue)}`,
+            communityValue: `${getAnswerValue(
+              fields.fixedCommunityPropertyValue,
+              fields.communityValue,
+              communityValue
+            )}`,
+            quasiValue: `${getAnswerValue(
+              fields.fixedQuasiPropertyValue,
+              fields.quasiValue,
+              quasiValue
+            )}`,
+            property: fields.propertyItems ? fields.propertyItems.map((i) => i.fields.name) : []
           }
         })
       : []
