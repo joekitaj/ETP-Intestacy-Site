@@ -165,6 +165,7 @@ var FamilyTree = function (e, t) {
     enableDragDrop: !1,
     enableSearch: !0,
     enableTouch: !1,
+    enablePan: !0,
     keyNavigation: !1,
     miniMap: !1,
     nodeMenu: null,
@@ -190,6 +191,8 @@ var FamilyTree = function (e, t) {
     nodes: [],
     clinks: [],
     slinks: [],
+    groupDottedLines: [],
+    dottedLines: [],
     levelSeparation: 60,
     siblingSeparation: 20,
     subtreeSeparation: 40,
@@ -256,19 +259,19 @@ var FamilyTree = function (e, t) {
     }
   }
 }),
-  (FamilyTree.prototype.load = function (e) {
-    var t = this
+  (FamilyTree.prototype.load = function (e, t) {
+    var i = this
     return (
       (this.config.nodes = e),
       this._draw(!1, FamilyTree.action.init, void 0, function () {
-        t.filterUI.update()
+        i.filterUI.update(), t && t()
       }),
       this
     )
   }),
-  (FamilyTree.prototype.loadXML = function (e) {
-    var t = FamilyTree._xml2json(e)
-    return this.load(t)
+  (FamilyTree.prototype.loadXML = function (e, t) {
+    var i = FamilyTree._xml2json(e)
+    return this.load(i, t)
   }),
   (FamilyTree.prototype.getXML = function () {
     return FamilyTree._json2xml(this.config.nodes)
@@ -296,39 +299,42 @@ var FamilyTree = function (e, t) {
           n,
           t,
           i,
-          function (e) {
-            if (!a.notifierUI.show(e.notif)) {
+          function (n) {
+            if (
+              !a.notifierUI.show(n.notif) &&
+              (!1 !== a.config.lazyLoading || !0 !== e || t === FamilyTree.action.exporting)
+            ) {
               t != FamilyTree.action.exporting &&
-                ((a.nodes = e.nodes), (a.visibleNodeIds = e.visibleNodeIds), (a.roots = e.roots)),
-                (a.editUI.fields = e.allFields)
-              var n = { defs: '' }
-              FamilyTree.events.publish('renderdefs', [a, n])
-              var l = a.ui.defs(n.defs),
-                o = a.getScale(e.viewBox)
-              l += a.ui.pointer(a.config, t, o)
-              var s = a.getViewBox(),
-                d = e.viewBox
-              n = { content: l, res: e }
-              FamilyTree.events.publish('prerender', [a, n]), (l = n.content)
-              for (var c = 0; c < e.visibleNodeIds.length; c++) {
-                var m = e.nodes[e.visibleNodeIds[c]],
-                  p = a._get(m.id)
+                ((a.nodes = n.nodes), (a.visibleNodeIds = n.visibleNodeIds), (a.roots = n.roots)),
+                (a.editUI.fields = n.allFields)
+              var l = { defs: '' }
+              FamilyTree.events.publish('renderdefs', [a, l])
+              var o = a.ui.defs(l.defs),
+                s = a.getScale(n.viewBox)
+              o += a.ui.pointer(a.config, t, s)
+              var d = a.getViewBox(),
+                c = n.viewBox
+              l = { content: o, res: n }
+              FamilyTree.events.publish('prerender', [a, l]), (o = l.content)
+              for (var m = 0; m < n.visibleNodeIds.length; m++) {
+                var p = n.nodes[n.visibleNodeIds[m]],
+                  h = a._get(p.id)
                 FamilyTree.RENDER_LINKS_BEFORE_NODES &&
-                  (l += a.ui.link(m, a, o, e.bordersByRootIdAndLevel, e.nodes, t)),
-                  (l += a.ui.node(m, p, e.animations, a.config, void 0, void 0, void 0, t, o, a))
+                  (o += a.ui.link(p, a, s, n.bordersByRootIdAndLevel, n.nodes, t)),
+                  (o += a.ui.node(p, h, n.animations, a.config, void 0, void 0, void 0, t, s, a))
               }
-              for (c = 0; c < e.visibleNodeIds.length; c++) {
-                m = e.nodes[e.visibleNodeIds[c]]
+              for (m = 0; m < n.visibleNodeIds.length; m++) {
+                p = n.nodes[n.visibleNodeIds[m]]
                 FamilyTree.RENDER_LINKS_BEFORE_NODES ||
-                  (l += a.ui.link(m, a, o, e.bordersByRootIdAndLevel, e.nodes, t)),
-                  (l += a.ui.expandCollapseBtn(a, m, a._layoutConfigs, t, o))
+                  (o += a.ui.link(p, a, s, n.bordersByRootIdAndLevel, n.nodes, t)),
+                  (o += a.ui.expandCollapseBtn(a, p, a._layoutConfigs, t, s))
               }
-              n = { content: l, res: e }
+              l = { content: o, res: n }
               if (
-                (FamilyTree.events.publish('render', [a, n]),
-                (l = n.content),
-                (e = n.res),
-                (l += a.ui.lonely(a.config)),
+                (FamilyTree.events.publish('render', [a, l]),
+                (o = l.content),
+                (n = l.res),
+                (o += a.ui.lonely(a.config)),
                 t !== FamilyTree.action.exporting)
               ) {
                 ;(t !== FamilyTree.action.centerNode &&
@@ -336,22 +342,22 @@ var FamilyTree = function (e, t) {
                   t !== FamilyTree.action.expand &&
                   t !== FamilyTree.action.collapse &&
                   t !== FamilyTree.action.update) ||
-                  (d = s),
-                  t === FamilyTree.action.init && null != s && (d = s),
-                  (a.response = e)
-                v = a.ui.svg(a.width(), a.height(), d, a.config, l)
+                  (c = d),
+                  t === FamilyTree.action.init && null != d && (c = d),
+                  (a.response = n)
+                F = a.ui.svg(a.width(), a.height(), c, a.config, o)
                 if (a._initialized) {
-                  var h = a.getSvg(),
-                    f = h.parentNode
-                  f.removeChild(h),
-                    f.insertAdjacentHTML('afterbegin', v),
+                  var f = a.getSvg(),
+                    u = f.parentNode
+                  u.removeChild(f),
+                    u.insertAdjacentHTML('afterbegin', F),
                     a._attachEventHandlers(),
                     a.xScrollUI.addListener(a.getSvg()),
                     a.yScrollUI.addListener(a.getSvg()),
                     a.xScrollUI.setPosition(),
                     a.yScrollUI.setPosition()
                 } else
-                  (a.element.innerHTML = a.ui.css() + v + a.ui.menuButton(a.config)),
+                  (a.element.innerHTML = a.ui.css() + F + a.ui.menuButton(a.config)),
                     a._attachInitEventHandlers(),
                     a._attachEventHandlers(),
                     a.xScrollUI.create(a.width(), a.config.padding),
@@ -362,81 +368,81 @@ var FamilyTree = function (e, t) {
                     a.yScrollUI.addListener(a.getSvg()),
                     a.config.enableSearch && a.searchUI.init(a),
                     a.toolbarUI.init(a, a.config.toolbar)
-                var u = !1,
-                  y = a.response.animations
-                if (y[0].length > 0) {
-                  a._hideBeforeAnimation(y[0].length)
-                  for (c = 0; c < y[0].length; c++) y[0][c] = a.getNodeElement(y[0][c])
+                var y = !1,
+                  g = a.response.animations
+                if (g[0].length > 0) {
+                  a._hideBeforeAnimation(g[0].length)
+                  for (m = 0; m < g[0].length; m++) g[0][m] = a.getNodeElement(g[0][m])
                   FamilyTree.animate(
-                    y[0],
-                    y[1],
-                    y[2],
+                    g[0],
+                    g[1],
+                    g[2],
                     a.config.anim.duration,
                     a.config.anim.func,
                     function () {
-                      u ||
+                      y ||
                         (r && r(),
                         FamilyTree.events.publish('redraw', [a]),
                         a._showAfterAnimation(),
-                        (u = !0))
+                        (y = !0))
                     }
                   )
                 }
                 t === FamilyTree.action.centerNode
                   ? FamilyTree.animate(
                       a.getSvg(),
-                      { viewbox: s },
+                      { viewbox: d },
                       { viewbox: a.response.viewBox },
                       a.config.anim.duration,
                       a.config.anim.func,
                       function () {
                         a.ripple(i.options.rippleId),
-                          u ||
+                          y ||
                             (r && r(),
                             FamilyTree.events.publish('redraw', [a]),
                             a._showAfterAnimation(),
-                            (u = !0))
+                            (y = !0))
                       },
                       function () {
                         a.xScrollUI.setPosition(), a.yScrollUI.setPosition()
                       }
                     )
-                  : !s ||
+                  : !d ||
                     !a.response ||
-                    (s[0] == a.response.viewBox[0] &&
-                      s[1] == a.response.viewBox[1] &&
-                      s[2] == a.response.viewBox[2] &&
-                      s[3] == a.response.viewBox[3]) ||
+                    (d[0] == a.response.viewBox[0] &&
+                      d[1] == a.response.viewBox[1] &&
+                      d[2] == a.response.viewBox[2] &&
+                      d[3] == a.response.viewBox[3]) ||
                     (t !== FamilyTree.action.insert &&
                       t !== FamilyTree.action.expand &&
                       t !== FamilyTree.action.collapse &&
                       t !== FamilyTree.action.update &&
                       t !== FamilyTree.action.init)
-                  ? 0 == y[0].length &&
-                    (u || (r && r(), FamilyTree.events.publish('redraw', [a]), (u = !0)))
+                  ? 0 == g[0].length &&
+                    (y || (r && r(), FamilyTree.events.publish('redraw', [a]), (y = !0)))
                   : FamilyTree.animate(
                       a.getSvg(),
-                      { viewbox: s },
+                      { viewbox: d },
                       { viewbox: a.response.viewBox },
                       2 * a.config.anim.duration,
                       a.config.anim.func,
                       function () {
                         a.xScrollUI.setPosition(),
                           a.yScrollUI.setPosition(),
-                          u || (r && r(), FamilyTree.events.publish('redraw', [a]), (u = !0))
+                          y || (r && r(), FamilyTree.events.publish('redraw', [a]), (y = !0))
                       }
                     ),
                   a._initialized ||
                     ((a._initialized = !0),
                     a.filterUI.update(),
                     FamilyTree.events.publish('init', [a])),
-                  !a._loaded && e && e.nodes && Object.keys(e.nodes).length && (a._loaded = !0)
+                  !a._loaded && n && n.nodes && Object.keys(n.nodes).length && (a._loaded = !0)
               } else {
-                var g = e.boundary,
-                  T = g.maxX - g.minX,
-                  b = g.maxY - g.minY,
-                  v = a.ui.svg(T, b, [g.minX, g.minY, T, b], a.config, l, o)
-                r(v)
+                var T = n.boundary,
+                  b = T.maxX - T.minX,
+                  v = T.maxY - T.minY,
+                  F = a.ui.svg(b, v, [T.minX, T.minY, b, v], a.config, o, s)
+                r(F)
               }
             }
           },
@@ -671,7 +677,7 @@ var FamilyTree = function (e, t) {
   (FamilyTree.prototype.generateId = function () {
     for (;;) {
       var e = '_' + ('0000' + ((Math.random() * Math.pow(36, 4)) | 0).toString(36)).slice(-4)
-      if (!this.nodes.hasOwnProperty(e)) return e
+      if (null == this.nodes || !this.nodes.hasOwnProperty(e)) return e
     }
   }),
   (FamilyTree.prototype._nodeHasHiddenParent = function (e) {
@@ -846,14 +852,30 @@ var FamilyTree = function (e, t) {
     return null == e.id && console.error('Call addNode without id'), this.config.nodes.push(e), this
   }),
   (FamilyTree.prototype._get = function (e) {
+    var t = this.__get(e)
+    if (t) return t
+    if (
+      (this.config.groupDottedLines.length || this.config.dottedLines.length) &&
+      !FamilyTree.isNEU(e) &&
+      'string' == typeof e &&
+      (-1 != e.indexOf('balkan_group_dotted_') || -1 != e.indexOf('balkan_dotted_'))
+    ) {
+      var i = (e = (e = e.replace('balkan_group_dotted_', '')).replace(
+        'balkan_dotted_',
+        ''
+      )).indexOf('_balkan_id_')
+      if (((e = e.substring(i + '_balkan_id_'.length)), (t = this.__get(e)))) return t
+    }
+    return null
+  }),
+  (FamilyTree.prototype.__get = function (e) {
     for (var t = 0; t < this.config.nodes.length; t++)
       if (this.config.nodes[t].id == e) return this.config.nodes[t]
     return null
   }),
   (FamilyTree.prototype.get = function (e) {
-    for (var t = 0; t < this.config.nodes.length; t++)
-      if (this.config.nodes[t].id == e) return JSON.parse(JSON.stringify(this.config.nodes[t]))
-    return null
+    var t = this._get(e)
+    return null == t ? null : JSON.parse(JSON.stringify(t))
   }),
   (FamilyTree.prototype.canRemove = function (e) {
     var t = this.getNode(e)
@@ -1375,7 +1397,7 @@ var FamilyTree = function (e, t) {
     }
   }),
   void 0 === FamilyTree && (FamilyTree = {}),
-  (FamilyTree.VERSION = '8.09.30'),
+  (FamilyTree.VERSION = '8.11.02'),
   (FamilyTree.orientation = {}),
   (FamilyTree.orientation.top = 0),
   (FamilyTree.orientation.bottom = 1),
@@ -1526,7 +1548,6 @@ var FamilyTree = function (e, t) {
   (FamilyTree.MIXED_LAYOUT_FOR_NODES_WITH_COLLAPSED_CHILDREN = !1),
   (FamilyTree.LINK_ROUNDED_CORNERS = 5),
   (FamilyTree.MOVE_STEP = 5),
-  (FamilyTree.MOVE_INTERVAL = 25),
   (FamilyTree.CLINK_CURVE = 1),
   (FamilyTree.MAX_DEPTH = 200),
   (FamilyTree.SCALE_FACTOR = 1.44),
@@ -1541,7 +1562,7 @@ var FamilyTree = function (e, t) {
   (FamilyTree.VERTICAL_CHILDREN_ASSISTANT = !1),
   'undefined' != typeof module && (module.exports = FamilyTree),
   (FamilyTree.OC_VERSION = FamilyTree.VERSION),
-  (FamilyTree.VERSION = '1.07.26'),
+  (FamilyTree.VERSION = '1.08.05'),
   (FamilyTree.RENDER_LINKS_BEFORE_NODES = !0),
   (FamilyTree.ARRAY_FIELDS = ['tags', 'pids']),
   (FamilyTree._intersects = function (e, t, i) {
@@ -1711,7 +1732,7 @@ var FamilyTree = function (e, t) {
             r.obj.updateNode(l.data, null, !0), r.hide()
           }
         })
-    for (var n = this.obj.element.querySelectorAll('[bft-input-btn]'), l = 0; l < n.length; l++) {
+    for (var n = this.obj.element.querySelectorAll('[data-input-btn]'), l = 0; l < n.length; l++) {
       n[l].addEventListener('click', function (t) {
         t.preventDefault(),
           FamilyTree.events.publish('element-btn-click', [
@@ -1862,12 +1883,15 @@ var FamilyTree = function (e, t) {
       (I.style.opacity = i ? 1 : 0),
       (I.style.right = i ? 0 : '-20px'),
       r && (I.style.width = r)
-    var A = [],
-      N = a ? '' : FamilyTree.EDITFORM_CLOSE_BTN
+    var N = [],
+      A = a ? '' : FamilyTree.EDITFORM_CLOSE_BTN
     return (
-      (I.innerHTML = `<div>\n                        <div class="bft-edit-form-header" ${C}>\n                            ${N}\n                            <h1 class="bft-edit-form-title">${FamilyTree._escapeGreaterLessSign(
-        g
-      )}</h1>\n                            <div id="bft-avatar" class="bft-edit-form-avatar">${T}</div>                        \n                        </div>\n                        <div data-bft-edit-from-btns class="bft-edit-form-instruments">\n                        ${(function () {
+      (I.innerHTML = `<div>\n                        <div class="bft-edit-form-header" ${C}>\n                            ${A}\n                            ${FamilyTree.editUI.renderHeaderContent(
+        g,
+        T,
+        f,
+        u
+      )}\n                        </div>\n                        <div data-bft-edit-from-btns class="bft-edit-form-instruments">\n                        ${(function () {
         if (a) return ''
         var e = ''
         for (var i in m) {
@@ -1891,7 +1915,7 @@ var FamilyTree = function (e, t) {
                 FamilyTree.isNEU(n) &&
                 FamilyTree.isNEU(s.value) &&
                 (n = s.id),
-                FamilyTree.isNEU(s.value) || A.push(`${l.label}: ${s.value}`),
+                FamilyTree.isNEU(s.value) || N.push(`${l.label}: ${s.value}`),
                 (e += s.html)
             }
             e += '</div>'
@@ -1901,13 +1925,13 @@ var FamilyTree = function (e, t) {
               FamilyTree.isNEU(n) &&
               FamilyTree.isNEU(s.value) &&
               (n = s.id),
-              FamilyTree.isNEU(s.value) || A.push(`${r.label}: ${s.value}`),
+              FamilyTree.isNEU(s.value) || N.push(`${r.label}: ${s.value}`),
               (e += s.html)
           }
         }
         return e
       })()}\n\n                                <div class="bft-form-field" style="min-width: 280px; text-align:center; ${S}">\n                                    <a data-add-more-fields-btn href="#" class="bft-link">${s}</a>\n                                </div>\n                            </div>        \n                        </div>\n                    </div>\n                    <div class="bft-form-fieldset" style="padding: 14px 10px; ${k}">\n                        <div class="bft-form-field" style="min-width: initial;">\n                            <button data-edit-from-cancel type="button" class="bft-button transparent">${c}</button>\n                        </div>\n                        <div class="bft-form-field" style="min-width: initial;">\n                            <button type="submit" data-edit-from-save type="button" class="bft-button">${d}</button>\n                        </div>\n                    </div>`),
-      { element: I, focusId: n, title: g, shareText: A.join('\n') }
+      { element: I, focusId: n, title: g, shareText: N.join('\n') }
     )
   }),
   (FamilyTree.editUI.prototype.hide = function () {
@@ -1915,6 +1939,11 @@ var FamilyTree = function (e, t) {
     FamilyTree.isNEU(this.interval) && (clearInterval(this.interval), (this.interval = null))
     var e = this.obj.element.querySelector('[data-bft-edit-form]')
     e && e.parentNode && e.parentNode.removeChild(e)
+  }),
+  (FamilyTree.editUI.renderHeaderContent = function (e, t, i, r) {
+    return `<h1 class="bft-edit-form-title">${FamilyTree._escapeGreaterLessSign(
+      e
+    )}</h1>\n                <div id="bft-avatar" class="bft-edit-form-avatar">${t}</div>`
   }),
   (FamilyTree.prototype.getSvg = function () {
     var e = this.element.getElementsByTagName('svg')
@@ -2012,10 +2041,10 @@ var FamilyTree = function (e, t) {
                 : 'png' === l
                 ? n.obj.exportPNG({ filename: 'FamilyTree.png', expandChildren: !1, nodeId: i })
                 : 'csv' === l
-                ? n.obj.exportCSV()
+                ? n.obj.exportCSV({ nodeId: i })
                 : 'xml' === l
-                ? n.obj.exportXML()
-                : 'json' === l && n.obj.exportJSON()
+                ? n.obj.exportXML({ nodeId: i })
+                : 'json' === l && n.obj.exportJSON({ nodeId: i })
           else t = a[l].onClick.call(n.obj, i, r)
           0 != t && n.hide()
         })
@@ -2108,19 +2137,19 @@ var FamilyTree = function (e, t) {
             h.appendChild(k)
           var I = k.getElementsByTagName('svg')[0]
           if ((I.setAttribute('pointer-events', 'none'), I)) {
-            var A = parseInt(I.getAttribute('width')),
-              N = parseInt(I.getAttribute('height'))
-            I.setAttribute('x', -A / 2), I.setAttribute('y', -N / 2)
+            var N = parseInt(I.getAttribute('width')),
+              A = parseInt(I.getAttribute('height'))
+            I.setAttribute('x', -N / 2), I.setAttribute('y', -A / 2)
           }
-          var M = (y * Math.PI) / (g / 2)
+          var E = (y * Math.PI) / (g / 2)
           y++
-          var E = Math.cos(M) * T,
-            L = Math.sin(M) * T
+          var M = Math.cos(E) * T,
+            L = Math.sin(E) * T
           this._buttonsInterval.push(
             FamilyTree.animate(
               k,
               { transform: [1, 0, 0, 1, 0, 0] },
-              { transform: [1, 0, 0, 1, E, L] },
+              { transform: [1, 0, 0, 1, M, L] },
               250,
               FamilyTree.anim.outBack,
               function (e) {
@@ -2384,6 +2413,7 @@ var FamilyTree = function (e, t) {
             FamilyTree.toolbarUI.layoutIcon +
             '</div>'),
           (this.layouts = document.createElement('div')),
+          this.layouts.classList.add('bft-toolbar-layout'),
           (this.layouts.innerHTML =
             '<svg ' +
             FamilyTree.attr.layout +
@@ -2396,18 +2426,7 @@ var FamilyTree = function (e, t) {
             '="mixed" style="cursor: pointer;" width="110" height="100"><rect fill="#039BE5" x="35" y="0" width="50" height="27"></rect><rect fill="#F57C00" x="35" y="41" width="50" height="27"></rect><rect fill="#F57C00" x="35" y="73" width="50" height="27"></rect><line stroke="#000000" x1="60" x2="60" y1="27" y2="41" stroke-width="1"></line><line stroke="#000000" x1="60" x2="60" y1="68" y2="73" stroke-width="1"></line></svg><svg ' +
             FamilyTree.attr.layout +
             '="tree" style="cursor: pointer;" width="110" height="100"><rect fill="#039BE5" x="35" y="0" width="50" height="27"></rect><rect fill="#F57C00" x="7" y="41" width="50" height="27"></rect><rect fill="#F57C00" x="7" y="73" width="50" height="27"></rect><rect fill="#F57C00" x="63" y="41" width="50" height="27"></rect><rect fill="#F57C00" x="63" y="73" width="50" height="27"></rect><line stroke="#000000" x1="60" x2="60" y1="27" y2="86" stroke-width="1"></line><line stroke="#000000" x1="57" x2="63" y1="54" y2="54" stroke-width="1"></line><line stroke="#000000" x1="57" x2="63" y1="86" y2="86" stroke-width="1"></line></svg>'),
-          this.obj.element.appendChild(this.layouts),
-          Object.assign(this.layouts.style, {
-            position: 'absolute',
-            width: '100%',
-            left: '0',
-            bottom: '-145px',
-            'box-shadow': '0px 1px 4px rgba(0,0,0,0.3)',
-            'background-color': '#f9f9f9',
-            height: '123px',
-            'padding-top': '20px',
-            'border-top': '1px solid #cacaca'
-          })),
+          this.obj.element.appendChild(this.layouts)),
         t.fullScreen &&
           (this.div.innerHTML +=
             '<div ' +
@@ -2812,8 +2831,7 @@ var FamilyTree = function (e, t) {
       }
     return 0
   }),
-  (FamilyTree._canEscapeHTML = function (e) {
-    if (!FamilyTree.ESCAPE_HTML || 'string' != typeof e) return !1
+  (FamilyTree._isHTML = function (e) {
     var t = new DOMParser().parseFromString(e, 'text/html')
     return Array.from(t.body.childNodes).some((e) => 1 === e.nodeType)
   }),
@@ -2839,7 +2857,9 @@ var FamilyTree = function (e, t) {
     if (-1 == i.indexOf(FamilyTree.attr.width)) return FamilyTree._escapeHtml(e)
     if (-1 != i.indexOf('foreignobject')) return FamilyTree._escapeHtml(e)
     if (-1 == t.indexOf(FamilyTree.attr.width)) return FamilyTree._escapeHtml(e)
-    if (FamilyTree._canEscapeHTML(e)) return FamilyTree._escapeHtml(e)
+    if (FamilyTree.ESCAPE_HTML && 'string' == typeof str && FamilyTree._isHTML(e))
+      return FamilyTree._escapeHtml(e)
+    if (!FamilyTree.ESCAPE_HTML && FamilyTree._isHTML(e)) return e
     var r = FamilyTree._getTestDiv()
     ;(t = t.replaceAll('{cw}', 0)), (r.innerHTML = '<svg>' + t + '</svg>')
     var a,
@@ -3344,6 +3364,7 @@ var FamilyTree = function (e, t) {
   (FamilyTree._convertStringToArrayOnImport = function (e, t) {
     return 'tags' == e || 'pids' == e ? (FamilyTree.isNEU(t) ? [] : t.split(',')) : t
   }),
+  void 0 === FamilyTree && (FamilyTree = {}),
   (FamilyTree.icon = {}),
   (FamilyTree.icon.png = function (e, t, i) {
     return (
@@ -3574,8 +3595,8 @@ var FamilyTree = function (e, t) {
   }),
   (FamilyTree.icon.share = function (e, t, i, r, a) {
     return (
-      FamilyTree.isNEU(r) && (r = 0),
-      FamilyTree.isNEU(a) && (a = 0),
+      null == r && (r = 0),
+      null == a && (a = 0),
       `<svg width="${e}" height="${t}" x="${r}" y="${a}" viewBox="0 0 512 512">\n                <path fill="${i}" d="M406,332c-29.641,0-55.761,14.581-72.167,36.755L191.99,296.124c2.355-8.027,4.01-16.346,4.01-25.124\n                    c0-11.906-2.441-23.225-6.658-33.636l148.445-89.328C354.307,167.424,378.589,180,406,180c49.629,0,90-40.371,90-90\n                    c0-49.629-40.371-90-90-90c-49.629,0-90,40.371-90,90c0,11.437,2.355,22.286,6.262,32.358l-148.887,89.59\n                    C156.869,193.136,132.937,181,106,181c-49.629,0-90,40.371-90,90c0,49.629,40.371,90,90,90c30.13,0,56.691-15.009,73.035-37.806\n                    l141.376,72.395C317.807,403.995,316,412.75,316,422c0,49.629,40.371,90,90,90c49.629,0,90-40.371,90-90\n                    C496,372.371,455.629,332,406,332z"/>\n                </svg>`
     )
   }),
@@ -3586,6 +3607,13 @@ var FamilyTree = function (e, t) {
       `<svg width="${e}" height="${t}" x="${r}" y="${a}" viewBox="0 0 24 24">\n                <path fill="${i}" d="M12 11.796C14.7189 11.796 16.9231 9.60308 16.9231 6.89801C16.9231 4.19294 14.7189 2.00005 12 2.00005C9.28106 2.00005 7.07692 4.19294 7.07692 6.89801C7.07692 9.60308 9.28106 11.796 12 11.796Z" fill="#030D45"/>\n                <path fill="${i}" d="M14.5641 13.8369H9.4359C6.46154 13.8369 4 16.2859 4 19.245C4 19.9593 4.30769 20.5716 4.92308 20.8777C5.84615 21.3879 7.89744 22.0001 12 22.0001C16.1026 22.0001 18.1538 21.3879 19.0769 20.8777C19.5897 20.5716 20 19.9593 20 19.245C20 16.1838 17.5385 13.8369 14.5641 13.8369Z" fill="#030D45"/>\n            </svg>`
     )
   }),
+  (FamilyTree.icon.close = function (e, t, i, r, a) {
+    return (
+      null == r && (r = 0),
+      null == a && (a = 0),
+      `<svg width="${e}" height="${t}" x="${r}" y="${a}" viewBox="0 0 512 512">\n    <path fill="${i}" d="m256 0c-141.49 0-256 114.5-256 256 0 141.49 114.5 256 256 256 141.49 0 256-114.5 256-256 0-141.49-114.5-256-256-256zm-12.284 317.397-58.121 58.132c-6.565 6.553-15.283 10.166-24.557 10.166-19.196 0-34.734-15.526-34.734-34.734 0-9.274 3.612-17.992 10.166-24.557l58.132-58.121c6.785-6.784 6.785-17.783 0-24.568l-58.132-58.121c-6.553-6.565-10.166-15.283-10.166-24.557 0-19.196 15.526-34.734 34.734-34.734 9.274 0 17.992 3.613 24.557 10.166l58.121 58.132c6.785 6.773 17.784 6.773 24.568 0l58.121-58.132c6.565-6.553 15.283-10.166 24.557-10.166 19.196 0 34.734 15.526 34.734 34.734 0 9.274-3.612 17.992-10.166 24.557l-58.132 58.121c-6.785 6.784-6.785 17.783 0 24.568l58.132 58.121c6.553 6.565 10.166 15.283 10.166 24.557 0 19.196-15.526 34.734-34.734 34.734-9.274 0-17.992-3.613-24.557-10.166l-58.121-58.132c-6.784-6.784-17.784-6.773-24.568 0z"/>\n    </svg>`
+    )
+  }),
   (FamilyTree.icon.ft = function (e, t, i, r, a) {
     return `<svg width="${e}" height="${t}" x="${r}" y="${a}" viewBox="0 0 512 512"  >\n                <path fill="${i}" d="m336.061 377.731c-5.086-6.54-14.511-7.717-21.049-2.631l-44.012 34.231v-200.331c0-8.284-6.716-15-15-15s-15 6.716-15 15v200.331l-44.011-34.231c-6.538-5.086-15.962-3.908-21.049 2.631-5.086 6.539-3.908 15.963 2.631 21.049l62.429 48.556v49.664c0 8.284 6.716 15 15 15s15-6.716 15-15v-49.664l62.429-48.556c6.54-5.086 7.717-14.51 2.632-21.049z" />\n                <path fill="${i}" d="m271 497v-49.664l62.429-48.556c6.54-5.086 7.717-14.51 2.631-21.049-5.086-6.54-14.511-7.717-21.049-2.631l-44.011 34.231v-200.331c0-8.284-6.716-15-15-15v318c8.284 0 15-6.716 15-15z" />\n                <path fill="${i}" d="m320 512h-128c-8.284 0-15-6.716-15-15s6.716-15 15-15h128c8.284 0 15 6.716 15 15s-6.716 15-15 15z" />\n                <path fill="${i}" d="m320 482h-64v30h64c8.284 0 15-6.716 15-15s-6.716-15-15-15z" />\n                <path fill="${i}" d="m400 439c-61.206 0-111-49.794-111-111s49.794-111 111-111 111 49.794 111 111-49.794 111-111 111z" />\n                <path fill="${i}" d="m112 439c-61.206 0-111-49.794-111-111s49.794-111 111-111 111 49.794 111 111-49.794 111-111 111z" />\n                <path fill="${i}" d="m256 222c-61.206 0-111-49.794-111-111s49.794-111 111-111 111 49.794 111 111-49.794 111-111 111z" />\n                <path fill="${i}" d="m367 111c0-61.206-49.794-111-111-111v222c61.206 0 111-49.794 111-111z" />\n            </svg>`
   }),
@@ -3594,13 +3622,6 @@ var FamilyTree = function (e, t) {
       FamilyTree.isNEU(r) && (r = 0),
       FamilyTree.isNEU(a) && (a = 0),
       `<svg width="${e}" height="${t}" x="${r}" y="${a}" viewBox="0 0 512 512" >\n                <path fill="${i}" d="M300.434,257.599c-25.945,27.304-60.622,43.875-98.602,43.875c-37.979,0-72.656-16.571-98.602-43.875 c-45.617,28.738-77.826,76.818-85.092,132.736c-1.659,12.77,8.291,24.107,21.201,24.107h225.846 c0-53.371,32.011-99.402,77.838-119.914C330.812,280.165,316.452,267.69,300.434,257.599z"/>\n                <ellipse fill="${i}" cx="201.828" cy="133.868" rx="112.229" ry="133.868"/>\n                <path fill="${i}" d="M396.486,316.885c-53.794,0-97.558,43.764-97.558,97.558S342.693,512,396.486,512c53.792,0,97.557-43.764,97.557-97.558 S450.279,316.885,396.486,316.885z M435.199,431.315h-21.841v21.841c0,9.318-7.554,16.872-16.872,16.872 c-9.318,0-16.872-7.554-16.872-16.872v-21.841h-21.842c-9.318,0-16.872-7.554-16.872-16.872c0-9.319,7.554-16.872,16.872-16.872 h21.842v-21.841c0-9.318,7.554-16.872,16.872-16.872c9.318,0,16.872,7.554,16.872,16.872v21.841h21.841 c9.318,0,16.872,7.554,16.872,16.872C452.072,423.761,444.518,431.315,435.199,431.315z"/>\n            </svg>`
-    )
-  }),
-  (FamilyTree.icon.close = function (e, t, i, r, a) {
-    return (
-      FamilyTree.isNEU(r) && (r = 0),
-      FamilyTree.isNEU(a) && (a = 0),
-      `<svg width="${e}" height="${t}" x="${r}" y="${a}" viewBox="0 0 512 512">\n    <path fill="${i}" d="m256 0c-141.49 0-256 114.5-256 256 0 141.49 114.5 256 256 256 141.49 0 256-114.5 256-256 0-141.49-114.5-256-256-256zm-12.284 317.397-58.121 58.132c-6.565 6.553-15.283 10.166-24.557 10.166-19.196 0-34.734-15.526-34.734-34.734 0-9.274 3.612-17.992 10.166-24.557l58.132-58.121c6.785-6.784 6.785-17.783 0-24.568l-58.132-58.121c-6.553-6.565-10.166-15.283-10.166-24.557 0-19.196 15.526-34.734 34.734-34.734 9.274 0 17.992 3.613 24.557 10.166l58.121 58.132c6.785 6.773 17.784 6.773 24.568 0l58.121-58.132c6.565-6.553 15.283-10.166 24.557-10.166 19.196 0 34.734 15.526 34.734 34.734 0 9.274-3.612 17.992-10.166 24.557l-58.132 58.121c-6.785 6.784-6.785 17.783 0 24.568l58.132 58.121c6.553 6.565 10.166 15.283 10.166 24.557 0 19.196-15.526 34.734-34.734 34.734-9.274 0-17.992-3.613-24.557-10.166l-58.121-58.132c-6.784-6.784-17.784-6.773-24.568 0z"/>\n    </svg>`
     )
   }),
   (FamilyTree.icon.daughter = function (e, t, i, r, a) {
@@ -3774,36 +3795,94 @@ var FamilyTree = function (e, t) {
       })
   }),
   (FamilyTree.prototype.exportCSV = function (e) {
-    e || (e = 'FamilyTree.csv')
-    var t = { ext: 'csv', filename: e, nodes: JSON.parse(JSON.stringify(this.config.nodes)) }
-    if (!1 === FamilyTree.events.publish('exportstart', [this, t])) return !1
-    var i = FamilyTree._json2csv(t.nodes),
-      r = { ext: t.ext, filename: t.filename, nodes: t.nodes, content: i }
-    if (!1 === FamilyTree.events.publish('exportend', [this, r])) return !1
+    var t = FamilyTree._defaultExportProfileOptionsForCSV_SVG_JSON(e, 'csv'),
+      i = this.getNode(t.nodeId),
+      r = null
+    i
+      ? ((r = []), FamilyTree._exportIterateForJSON_XML_CSV(this, i, t, r))
+      : !1 === t.min || !1 === t.expandChildren
+      ? FamilyTree._exportIterateForJSON_XML_CSV(this, this.roots, t, r)
+      : (r = JSON.parse(JSON.stringify(this.config.nodes)))
+    var a = { ext: 'csv', filename: e, options: t, nodes: r }
+    if (!1 === FamilyTree.events.publish('exportstart', [this, a])) return !1
+    var n = FamilyTree._json2csv(a.nodes),
+      l = { ext: a.ext, filename: a.filename, options: t, nodes: a.nodes, content: n }
+    if (!1 === FamilyTree.events.publish('exportend', [this, l])) return !1
     FamilyTree._downloadFile(
       'text/csv;charset=utf-8;',
-      '\ufeff' + r.content,
-      r.filename,
-      r.openInNewTab,
-      r.ext
+      '\ufeff' + l.content,
+      l.options.filename,
+      l.options.openInNewTab,
+      l.ext
     )
   }),
   (FamilyTree.prototype.exportXML = function (e) {
-    e || (e = 'FamilyTree.xml')
-    var t = { ext: 'xml', filename: e, nodes: JSON.parse(JSON.stringify(this.config.nodes)) }
-    if (!1 === FamilyTree.events.publish('exportstart', [this, t])) return !1
-    var i = FamilyTree._json2xml(t.nodes),
-      r = { ext: t.ext, filename: t.filename, nodes: t.nodes, content: i }
-    if (!1 === FamilyTree.events.publish('exportend', [this, r])) return !1
-    FamilyTree._downloadFile('application/xml', r.content, r.filename, r.openInNewTab, r.ext)
+    var t = FamilyTree._defaultExportProfileOptionsForCSV_SVG_JSON(e, 'xml'),
+      i = this.getNode(t.nodeId),
+      r = null
+    i
+      ? ((r = []), FamilyTree._exportIterateForJSON_XML_CSV(this, i, t, r))
+      : !1 === t.min || !1 === t.expandChildren
+      ? FamilyTree._exportIterateForJSON_XML_CSV(this, this.roots, t, r)
+      : (r = JSON.parse(JSON.stringify(this.config.nodes)))
+    var a = { ext: 'xml', filename: e, options: t, nodes: r }
+    if (!1 === FamilyTree.events.publish('exportstart', [this, a])) return !1
+    var n = FamilyTree._json2xml(a.nodes),
+      l = { ext: a.ext, filename: a.filename, options: t, nodes: a.nodes, content: n }
+    if (!1 === FamilyTree.events.publish('exportend', [this, l])) return !1
+    FamilyTree._downloadFile(
+      'application/xml',
+      l.content,
+      l.options.filename,
+      l.options.openInNewTab,
+      l.ext
+    )
   }),
   (FamilyTree.prototype.exportJSON = function (e) {
-    e || (e = 'FamilyTree.json')
-    var t = { ext: 'json', filename: e, nodes: JSON.parse(JSON.stringify(this.config.nodes)) }
-    if (!1 === FamilyTree.events.publish('exportstart', [this, t])) return !1
-    var i = { ext: t.ext, filename: t.filename, nodes: t.nodes, content: JSON.stringify(t.nodes) }
-    if (!1 === FamilyTree.events.publish('exportend', [this, i])) return !1
-    FamilyTree._downloadFile('application/json', i.content, i.filename, i.openInNewTab, i.ext)
+    var t = FamilyTree._defaultExportProfileOptionsForCSV_SVG_JSON(e, 'json'),
+      i = this.getNode(t.nodeId),
+      r = null
+    i
+      ? ((r = []), FamilyTree._exportIterateForJSON_XML_CSV(this, i, t, r))
+      : !1 === t.min || !1 === t.expandChildren
+      ? FamilyTree._exportIterateForJSON_XML_CSV(this, this.roots, t, r)
+      : (r = JSON.parse(JSON.stringify(this.config.nodes)))
+    var a = { ext: 'json', filename: t.filename, options: t, nodes: r }
+    if (!1 === FamilyTree.events.publish('exportstart', [this, a])) return !1
+    var n = {
+      ext: a.ext,
+      filename: a.filename,
+      options: t,
+      nodes: a.nodes,
+      content: JSON.stringify(a.nodes)
+    }
+    if (!1 === FamilyTree.events.publish('exportend', [this, n])) return !1
+    FamilyTree._downloadFile(
+      'application/json',
+      n.content,
+      n.options.filename,
+      n.options.openInNewTab,
+      n.ext
+    )
+  }),
+  (FamilyTree._exportIterateForJSON_XML_CSV = function (e, t, i, r) {
+    if (Array.isArray(t))
+      for (var a = 0; a < t.length; a++) FamilyTree._exportIterateForJSON_XML_CSV(e, t[a], i, r)
+    else {
+      var n = e.get(t.id)
+      if ((r.push(n), i.min))
+        for (a = 0; a < t.stChildrenIds.length; a++)
+          FamilyTree._exportIterateForJSON_XML_CSV(e, e.getNode(t.stChildrenIds[a]), i, r)
+      else
+        for (a = 0; a < t.stChildren.length; a++)
+          FamilyTree._exportIterateForJSON_XML_CSV(e, t.stChildren[a], i, r)
+      if (i.expandChildren)
+        for (a = 0; a < t.childrenIds.length; a++)
+          FamilyTree._exportIterateForJSON_XML_CSV(e, e.getNode(t.childrenIds[a]), i, r)
+      else
+        for (a = 0; a < t.children.length; a++)
+          FamilyTree._exportIterateForJSON_XML_CSV(e, t.children[a], i, r)
+    }
   }),
   (FamilyTree.prototype._pages = function (e, t, i) {
     ;('A5' == e.format && 'fit' != e.scale) ||
@@ -3933,6 +4012,17 @@ var FamilyTree = function (e, t) {
       null == e.footer && (e.footer = ''),
       null == e.openInNewTab && (e.openInNewTab = !1),
       null == e.mode && (e.mode = 'bft-' + this.config.mode),
+      e
+    )
+  }),
+  (FamilyTree._defaultExportProfileOptionsForCSV_SVG_JSON = function (e, t) {
+    return (
+      FamilyTree.isNEU(e) && (e = {}),
+      'string' == typeof e && (e = { filename: e }),
+      FamilyTree.isNEU(e.filename) && (e.filename = `FamilyTree.${t}`),
+      FamilyTree.isNEU(e.expandChildren) && (e.expandChildren = !0),
+      FamilyTree.isNEU(e.min) && (e.min = !0),
+      FamilyTree.isNEU(e.openInNewTab) && (e.openInNewTab = !1),
       e
     )
   }),
@@ -4564,7 +4654,10 @@ var FamilyTree = function (e, t) {
           this.config.tags[n].nodeContextMenu &&
           (r = this.config.tags[n].nodeContextMenu)
       }
-    this.nodeContextMenuUI.show(t.pageX, t.pageY, e, null, r)
+    var l = this.element.getBoundingClientRect(),
+      o = t.clientX - l.left,
+      s = t.clientY - l.top
+    this.nodeContextMenuUI.show(o, s, e, null, r)
   }),
   (FamilyTree.prototype._globalDbClickHandler = function (e, t) {
     for (var i = t.target; i != e; ) {
@@ -4668,8 +4761,8 @@ var FamilyTree = function (e, t) {
               s = {
                 left: l.width() - (o.x + l.config.padding) < 0,
                 right: o.x - l.config.padding < 0,
-                down: l.height() - (o.y + l.config.padding) < 0,
-                up: o.y - l.config.padding < 0
+                up: l.height() - (o.y + l.config.padding) < 0,
+                down: o.y - l.config.padding < 0
               }
             if (s.left || s.right || s.up || s.down) {
               p.classList &&
@@ -4683,7 +4776,7 @@ var FamilyTree = function (e, t) {
                 w = h.y,
                 k = i.x,
                 S = i.y
-              l.startMove(s, function (e) {
+              l.moveStart(s, function (e) {
                 ;(u[4] = v + e.x),
                   (u[5] = x + e.y),
                   (h.x = _ - e.xWithoutScale),
@@ -4694,7 +4787,7 @@ var FamilyTree = function (e, t) {
               })
             } else {
               for (
-                l.stopMove(),
+                l.moveEnd(),
                   p.classList &&
                     (p.classList.add('bft-cursor-grab'),
                     p.classList.remove('bft-cursor-move'),
@@ -4716,22 +4809,22 @@ var FamilyTree = function (e, t) {
               if (null != c) {
                 m.classList.add('bft-drag-over')
                 for (
-                  var I = l.getNode(c), A = FamilyTree.getStParentNodes(I), N = 0;
-                  N < A.length;
-                  N++
+                  var I = l.getNode(c), N = FamilyTree.getStParentNodes(I), A = 0;
+                  A < N.length;
+                  A++
                 ) {
-                  var M = l.getNodeElement(A[N].id)
-                  M && (M.style.opacity = 0.1)
+                  var E = l.getNodeElement(N[A].id)
+                  E && (E.style.opacity = 0.1)
                 }
                 p.classList.remove('bft-cursor-grab'),
                   p.classList.remove('bft-cursor-move'),
                   p.classList.add('bft-cursor-copy'),
                   p.classList.remove('bft-cursor-nodrop')
               }
-              var E = (i.x - h.x) / d,
+              var M = (i.x - h.x) / d,
                 L = (i.y - h.y) / d
               if (
-                ((u[4] = y + E),
+                ((u[4] = y + M),
                 (u[5] = g + L),
                 !e._dragEventFired &&
                   (Math.abs(i.x - h.x) > FamilyTree.FIRE_DRAG_NOT_CLICK_IF_MOVE ||
@@ -4749,7 +4842,7 @@ var FamilyTree = function (e, t) {
         },
         F = function (t) {
           if (
-            (l.stopMove(),
+            (l.moveEnd(),
             p.classList &&
               (p.classList.remove('bft-cursor-grab'),
               p.classList.remove('bft-cursor-move'),
@@ -4806,7 +4899,9 @@ var FamilyTree = function (e, t) {
         h = m[5],
         f = s.getScale(),
         u = e.cloneNode(!0)
-      d.insertBefore(u, d.firstChild), (u.style.opacity = 0.7)
+      u.setAttribute('data-n-id', 'draging'),
+        d.insertBefore(u, d.firstChild),
+        (u.style.opacity = 0.7)
       var y = function (e, t) {
           if (null != e) {
             t.classList.remove('bft-drag-over')
@@ -4829,8 +4924,8 @@ var FamilyTree = function (e, t) {
               g = {
                 left: s.width() - (a.x + s.config.padding) < 0,
                 right: a.x - s.config.padding < 0,
-                down: s.height() - (a.y + s.config.padding) < 0,
-                up: a.y - s.config.padding < 0
+                up: s.height() - (a.y + s.config.padding) < 0,
+                down: a.y - s.config.padding < 0
               }
             if (g.left || g.right || g.up || g.down) {
               d.classList &&
@@ -4844,7 +4939,7 @@ var FamilyTree = function (e, t) {
                 x = c.y,
                 _ = i.x,
                 w = i.y
-              s.startMove(g, function (e) {
+              s.moveStart(g, function (e) {
                 ;(m[4] = b + e.x),
                   (m[5] = v + e.y),
                   (c.x = F - e.xWithoutScale),
@@ -4855,7 +4950,7 @@ var FamilyTree = function (e, t) {
               })
             } else {
               if (
-                (s.stopMove(),
+                (s.moveEnd(),
                 d.classList &&
                   (d.classList.add('bft-cursor-grab'),
                   d.classList.remove('bft-cursor-move'),
@@ -4876,15 +4971,15 @@ var FamilyTree = function (e, t) {
                   }
                   r = r.parentNode
                 }
-              if (null != l) {
+              if (('draging' == l && ((l = null), (o = null)), null != l)) {
                 o.classList.add('bft-drag-over')
                 for (
                   var S = s.getNode(l), C = FamilyTree.getStParentNodes(S), I = 0;
                   I < C.length;
                   I++
                 ) {
-                  var A = s.getNodeElement(C[I].id)
-                  A && (A.style.opacity = 0.1)
+                  var N = s.getNodeElement(C[I].id)
+                  N && (N.style.opacity = 0.1)
                 }
                 !s.canUpdateLink(n.id, l) && d.classList
                   ? (d.classList.remove('bft-cursor-grab'),
@@ -4897,11 +4992,11 @@ var FamilyTree = function (e, t) {
                     d.classList.add('bft-cursor-copy'),
                     d.classList.remove('bft-cursor-nodrop'))
               }
-              var N = (i.x - c.x) / f,
-                M = (i.y - c.y) / f
+              var A = (i.x - c.x) / f,
+                E = (i.y - c.y) / f
               if (
-                ((m[4] = p + N),
-                (m[5] = h + M),
+                ((m[4] = p + A),
+                (m[5] = h + E),
                 !e._dragEventFired &&
                   (Math.abs(i.x - c.x) > FamilyTree.FIRE_DRAG_NOT_CLICK_IF_MOVE ||
                     Math.abs(i.y - c.y) > FamilyTree.FIRE_DRAG_NOT_CLICK_IF_MOVE))
@@ -4913,7 +5008,7 @@ var FamilyTree = function (e, t) {
         },
         T = function (t) {
           if (
-            (s.stopMove(),
+            (s.moveEnd(),
             d.classList &&
               (d.classList.remove('bft-cursor-grab'),
               d.classList.remove('bft-cursor-move'),
@@ -4925,12 +5020,12 @@ var FamilyTree = function (e, t) {
             n.id == l || null == l)
           )
             return (
+              e._dragEventFired && FamilyTree.events.publish('drop', [s, n.id, void 0, u]),
               d.removeChild(u),
-              (s._gragStartedId = null),
-              void (e._dragEventFired && FamilyTree.events.publish('drop', [s, n.id]))
+              void (s._gragStartedId = null)
             )
           var r = s.getNode(l)
-          if (!1 === FamilyTree.events.publish('drop', [s, n.id, r.id]))
+          if (!1 === FamilyTree.events.publish('drop', [s, n.id, r.id, u]))
             return y(l, o), d.removeChild(u), void (s._gragStartedId = null)
           if (s.canUpdateLink(n.id, l)) {
             var a = s.get(n.id)
@@ -5063,43 +5158,49 @@ var FamilyTree = function (e, t) {
       this.xScrollUI.setPosition(),
       this.yScrollUI.setPosition()
   }),
-  (FamilyTree.prototype.startMove = function (e, t) {
+  (FamilyTree.prototype.moveStart = function (e, t, i, r) {
     if (e) {
-      if (((this._movePosition = e), !this._moveInterval)) {
-        var i = this,
-          r = this.getViewBox().slice(0),
-          a = this.getScale(),
-          n = 0,
-          l = 0
-        this._moveInterval = setInterval(function () {
-          var e = { x: 0, y: 0, xWithoutScale: 0, yWithoutScale: 0 }
-          i._movePosition.left &&
-            (n++,
-            (e.x = (n * FamilyTree.MOVE_STEP) / a),
-            (e.xWithoutScale = n * FamilyTree.MOVE_STEP)),
-            i._movePosition.right &&
-              (n++,
-              (e.x = (-n * FamilyTree.MOVE_STEP) / a),
-              (e.xWithoutScale = -n * FamilyTree.MOVE_STEP)),
-            i._movePosition.up &&
-              (l++,
-              (e.y = (-l * FamilyTree.MOVE_STEP) / a),
-              (e.yWithoutScale = -l * FamilyTree.MOVE_STEP)),
-            i._movePosition.down &&
-              (l++,
-              (e.y = (l * FamilyTree.MOVE_STEP) / a),
-              (e.yWithoutScale = l * FamilyTree.MOVE_STEP)),
-            i.setViewBox([r[0] + e.x, r[1] + e.y, r[2], r[3]]),
-            i.xScrollUI.setPosition(),
-            i.yScrollUI.setPosition(),
-            t && t(e)
-        }, FamilyTree.MOVE_INTERVAL)
+      if (!this._moveInterval) {
+        var a = this,
+          n = this.getViewBox().slice(0),
+          l = this.getScale(),
+          o = 0,
+          s = 0,
+          d = 1
+        FamilyTree.isNEU(i) && (i = FamilyTree.anim.inSin),
+          FamilyTree.isNEU(r) && (r = 3e3),
+          (this._moveInterval = setInterval(function () {
+            var c = { x: 0, y: 0, xWithoutScale: 0, yWithoutScale: 0 }
+            e.left
+              ? (o++,
+                (c.x = (o * FamilyTree.MOVE_STEP) / l),
+                (c.xWithoutScale = o * FamilyTree.MOVE_STEP))
+              : e.right &&
+                (o++,
+                (c.x = (-o * FamilyTree.MOVE_STEP) / l),
+                (c.xWithoutScale = -o * FamilyTree.MOVE_STEP)),
+              e.up
+                ? (s++,
+                  (c.y = (s * FamilyTree.MOVE_STEP) / l),
+                  (c.yWithoutScale = s * FamilyTree.MOVE_STEP))
+                : e.down &&
+                  (s++,
+                  (c.y = (-s * FamilyTree.MOVE_STEP) / l),
+                  (c.yWithoutScale = -s * FamilyTree.MOVE_STEP))
+            var m = i((10 * d - 10) / r)
+            ;(c.x = c.x * m),
+              (c.xWithoutScale = c.xWithoutScale * m),
+              (c.y = c.y * m),
+              (c.yWithoutScale = c.yWithoutScale * m),
+              a.setViewBox([n[0] + c.x, n[1] + c.y, n[2], n[3]]),
+              t && t(c),
+              (d += 1)
+          }, 10))
       }
     } else console.error('movePosition parameter not defined')
   }),
-  (FamilyTree.prototype.stopMove = function () {
-    this._moveInterval &&
-      (clearInterval(this._moveInterval), (this._moveInterval = null), (this._movePosition = null))
+  (FamilyTree.prototype.moveEnd = function () {
+    this._moveInterval && (clearInterval(this._moveInterval), (this._moveInterval = null))
   }),
   void 0 === FamilyTree && (FamilyTree = {}),
   (FamilyTree.node = function (e, t, i, r) {
@@ -5169,10 +5270,11 @@ var FamilyTree = function (e, t) {
           i.leave && e.removeEventListener(i.leave, c),
           i.touchstart && e.removeEventListener(i.touchstart, c)
       }
-    e.addEventListener(i.move, d),
+    this.config.enablePan &&
+      (e.addEventListener(i.move, d),
       e.addEventListener(i.up, c),
       i.leave && e.addEventListener(i.leave, c),
-      i.touchstart && e.addEventListener(i.touchstart, c)
+      i.touchstart && e.addEventListener(i.touchstart, c))
   }),
   (FamilyTree.prototype._changeCursorOnPanStart = function (e, t, i) {
     var r = this.getPointerElement(),
@@ -5214,7 +5316,7 @@ var FamilyTree = function (e, t) {
       '320px'
     )
     ;(o.innerHTML += s.html),
-      (this.xBtn = o.querySelector('[bft-input-btn]')),
+      (this.xBtn = o.querySelector('[data-input-btn]')),
       (this.xBtn.style.display = 'none'),
       (this.searchTableWrapper = document.createElement('div')),
       o.appendChild(this.searchTableWrapper)
@@ -5278,7 +5380,7 @@ var FamilyTree = function (e, t) {
       if (e.hasAttribute('data-search-item-id')) {
         var t = e.getAttribute('data-search-item-id')
         if (this.input.value != FamilyTree.SEARCH_HELP_SYMBOL)
-          0 != FamilyTree.events.publish('searchclick', [that.obj, t]) && this.obj.center(t)
+          0 != FamilyTree.events.publish('searchclick', [this.obj, t]) && this.obj.center(t)
         else (this.input.value = t + ' '), (this.searchTableWrapper.innerHTML = '')
       }
     } else
@@ -5738,9 +5840,9 @@ var FamilyTree = function (e, t) {
       FamilyTree.manager._iterate(e, t.children[T], i, r, a, n, l, o, s, d, c, m)
   }),
   (FamilyTree.manager.__createNodes = function (e, t, i, r, a, n, l, o) {
-    for (var s = i.nodes, d = [], c = 0; c < s.length; c++) {
+    for (var s = [], d = FamilyTree._addDottedLines(i), c = 0; c < d.length; c++) {
       var m,
-        p = s[c]
+        p = d[c]
       ;(m = FamilyTree.STRING_TAGS
         ? p.tags
           ? p.tags.split(',')
@@ -5757,10 +5859,10 @@ var FamilyTree = function (e, t) {
         FamilyTree.isNEU(p.stpid) || (u.stpid = p.stpid),
         null != i.orderBy && (u.order = FamilyTree.manager._getOrderFieldValue(p, i.orderBy)),
         (e[p.id] = u),
-        d.push(p.id)
+        s.push(p.id)
     }
     null != i.orderBy &&
-      d.sort(function (t, r) {
+      s.sort(function (t, r) {
         var a = e[t].order,
           n = e[r].order
         return 'number' == typeof a || 'number' == typeof n
@@ -5771,8 +5873,8 @@ var FamilyTree = function (e, t) {
             i.orderBy.desc ? n.localeCompare(a) : a.localeCompare(n))
           : void 0
       })
-    for (c = 0; c < d.length; c++) {
-      var y = d[c],
+    for (c = 0; c < s.length; c++) {
+      var y = s[c],
         g = ((u = e[y]), n ? n[y] : null),
         T = e[u.stpid],
         b = e[u.pid]
@@ -5899,60 +6001,60 @@ var FamilyTree = function (e, t) {
     for (c = 0; c < C.length; c++) {
       g = o[C[c]]
       var I = [],
-        A = [],
         N = [],
-        M = {},
-        E = 0,
+        A = [],
+        E = {},
+        M = 0,
         L = 0,
-        U = 0,
-        O = [],
+        O = 0,
+        U = [],
         B = []
       for (F = 0; F < g.children.length; F++) {
         ;(z = g.children[F]).isAssistant
           ? I.push(z.id)
           : -1 != z.tags.indexOf('right-partner')
-          ? ((z.isPartner = 1), (z.children = []), A.push(z.id))
+          ? ((z.isPartner = 1), (z.children = []), N.push(z.id))
           : -1 != z.tags.indexOf('left-partner')
-          ? ((z.isPartner = 2), (z.children = []), N.push(z.id))
-          : -1 == z.tags.indexOf('partner') || E % 2
-          ? -1 != z.tags.indexOf('partner') && E % 2
-            ? ((z.isPartner = 2), (z.children = []), N.push(z.id), E++)
+          ? ((z.isPartner = 2), (z.children = []), A.push(z.id))
+          : -1 == z.tags.indexOf('partner') || M % 2
+          ? -1 != z.tags.indexOf('partner') && M % 2
+            ? ((z.isPartner = 2), (z.children = []), A.push(z.id), M++)
             : z.parentPartner
-            ? (M[z.parentPartner.id] || (M[z.parentPartner.id] = []),
-              M[z.parentPartner.id].push(z.id))
+            ? (E[z.parentPartner.id] || (E[z.parentPartner.id] = []),
+              E[z.parentPartner.id].push(z.id))
             : I.push(z.id)
-          : ((z.isPartner = 1), (z.children = []), A.push(z.id), E++)
+          : ((z.isPartner = 1), (z.children = []), N.push(z.id), M++)
       }
       g.children = []
       var P = []
-      for (F = 0; F < A.length; F++) {
-        M[(z = o[A[F]]).id] ? g.children.push(z) : g.children.splice(0, 0, z)
-        for (var R = 0; R < z.childrenIds.length; R++) P.push(z.childrenIds[R])
-      }
-      var D = []
       for (F = 0; F < N.length; F++) {
-        M[(z = o[N[F]]).id] ? g.children.push(z) : g.children.splice(0, 0, z)
-        for (R = 0; R < z.childrenIds.length; R++) D.push(z.childrenIds[R])
+        E[(z = o[N[F]]).id] ? g.children.push(z) : g.children.splice(0, 0, z)
+        for (var D = 0; D < z.childrenIds.length; D++) P.push(z.childrenIds[D])
       }
-      for (F = 0; F < D.length; F++) {
-        ;(z = o[D[F]]).collapsed ||
+      var R = []
+      for (F = 0; F < A.length; F++) {
+        E[(z = o[A[F]]).id] ? g.children.push(z) : g.children.splice(0, 0, z)
+        for (D = 0; D < z.childrenIds.length; D++) R.push(z.childrenIds[D])
+      }
+      for (F = 0; F < R.length; F++) {
+        ;(z = o[R[F]]).collapsed ||
           ((z.parentPartner = z.parent),
           (z.parent = g),
           (z.isChildOfPartner = !0),
           g.children.push(z))
       }
-      for (F = N.length - 1; F >= 0; F--)
-        if (M[N[F]])
-          for (u = 0; u < M[N[F]].length; u++)
-            g.children.push(o[M[N[F]][u]]), L++, -1 == B.indexOf(N[F]) && B.push(N[F])
+      for (F = A.length - 1; F >= 0; F--)
+        if (E[A[F]])
+          for (u = 0; u < E[A[F]].length; u++)
+            g.children.push(o[E[A[F]][u]]), L++, -1 == B.indexOf(A[F]) && B.push(A[F])
       for (F = 0; F < I.length; F++) {
         var z = o[I[F]]
         g.children.push(z)
       }
-      for (F = 0; F < A.length; F++)
-        if (M[A[F]])
-          for (u = 0; u < M[A[F]].length; u++)
-            g.children.push(o[M[A[F]][u]]), U++, -1 == O.indexOf(A[F]) && O.push(A[F])
+      for (F = 0; F < N.length; F++)
+        if (E[N[F]])
+          for (u = 0; u < E[N[F]].length; u++)
+            g.children.push(o[E[N[F]][u]]), O++, -1 == U.indexOf(N[F]) && U.push(N[F])
       for (F = 0; F < P.length; F++) {
         ;(z = o[P[F]]).collapsed ||
           ((z.parentPartner = z.parent),
@@ -5961,13 +6063,13 @@ var FamilyTree = function (e, t) {
           g.children.push(z))
       }
       ;(g.partnerSeparation =
-        Math.max(B.length, O.length) * t.partnerChildrenSplitSeparation + t.minPartnerSeparation),
-        I.length || !L || U
-          ? I.length || L || !U
-            ? I.length || 1 != L || 1 != U
-              ? I.length || L || U
-                ? !I.length || L || U
-                  ? I.length && (L || U)
+        Math.max(B.length, U.length) * t.partnerChildrenSplitSeparation + t.minPartnerSeparation),
+        I.length || !L || O
+          ? I.length || L || !O
+            ? I.length || 1 != L || 1 != O
+              ? I.length || L || O
+                ? !I.length || L || O
+                  ? I.length && (L || O)
                     ? (g.hasPartners = 7)
                     : (g.hasPartners = 1)
                   : (g.hasPartners = 6)
@@ -5994,10 +6096,10 @@ var FamilyTree = function (e, t) {
       ;(b = o[$]).hasAssistants = !0
       j = new FamilyTree.node(b.id + '_split_assitant_0', b.id, ['assistant'], 'split')
       FamilyTree.manager._initDinamicNode(j, b.lcn, !0), (o[j.id] = j)
-      var Y = []
+      var X = []
       for (F = b.children.length - 1; F >= 0; F--) {
         ;(z = b.children[F]).isAssistant
-          ? ((z.parent = null), b.children.splice(F, 1), Y.splice(0, 0, z.id))
+          ? ((z.parent = null), b.children.splice(F, 1), X.splice(0, 0, z.id))
           : z.isPartner ||
             (z.parent &&
               S[z.parent.id] &&
@@ -6009,37 +6111,37 @@ var FamilyTree = function (e, t) {
             j.children.unshift(z),
             b.children.splice(F, 1))
       }
-      if (Y.length % 2) {
-        var q = o[Y[Y.length - 1]],
-          X = new FamilyTree.node(q.id + '_mirror', b.pid, [], 'mirror')
-        FamilyTree.manager._initDinamicNode(X, q.lcn, !0),
-          (q._m = X.id),
-          (X.isAssistant = !0),
-          (X.w = q.w),
-          (X.h = q.h),
-          (o[X.id] = X),
-          Y.splice(Y.length - 1, 0, X.id)
+      if (X.length % 2) {
+        var Y = o[X[X.length - 1]],
+          q = new FamilyTree.node(Y.id + '_mirror', b.pid, [], 'mirror')
+        FamilyTree.manager._initDinamicNode(q, Y.lcn, !0),
+          (Y._m = q.id),
+          (q.isAssistant = !0),
+          (q.w = Y.w),
+          (q.h = Y.h),
+          (o[q.id] = q),
+          X.splice(X.length - 1, 0, q.id)
       }
       var V = 1
-      for (F = Y.length - 1; F >= 0; F--)
-        if (F % 2 && F != Y.length - 1) {
+      for (F = X.length - 1; F >= 0; F--)
+        if (F % 2 && F != X.length - 1) {
           var W = new FamilyTree.node(b.id + '_split_assitant_' + V, b.pid, [], 'split')
           FamilyTree.manager._initDinamicNode(W, b.lcn, !0),
             (o[W.id] = W),
-            Y.splice(F, 0, W.id),
+            X.splice(F, 0, W.id),
             V++
-        } else F % 2 && Y.splice(F, 0, j.id)
-      for (F = 0; F < Y.length; F += 3) {
+        } else F % 2 && X.splice(F, 0, j.id)
+      for (F = 0; F < X.length; F += 3) {
         var G = null
-        G = 0 == F ? b : o[Y[F - 2]]
-        var K = o[Y[F]],
-          J = o[Y[F + 1]],
-          Z = o[Y[F + 2]]
-        ;(K.parent = G),
-          (J.parent = G),
+        G = 0 == F ? b : o[X[F - 2]]
+        var J = o[X[F]],
+          K = o[X[F + 1]],
+          Z = o[X[F + 2]]
+        ;(J.parent = G),
+          (K.parent = G),
           (Z.parent = G),
-          G.children.push(K),
           G.children.push(J),
+          G.children.push(K),
           G.children.push(Z)
       }
     }
@@ -6129,12 +6231,12 @@ var FamilyTree = function (e, t) {
             for (F = 0; F < oe.length; F += 3) {
               G = null
               0 == F && (G = b)
-              ;(K = o[oe[F]]), (J = o[oe[F + 1]]), (Z = o[oe[F + 2]])
+              ;(J = o[oe[F]]), (K = o[oe[F + 1]]), (Z = o[oe[F + 2]])
               0 != F && (G = o[oe[F - 3]]),
-                0 == F || J || (G = o[oe[F - 2]]),
-                (K.parent = G),
-                G.children.push(K),
-                J && (0 != F && (G = o[oe[F - 2]]), (J.parent = G), G.children.push(J)),
+                0 == F || K || (G = o[oe[F - 2]]),
+                (J.parent = G),
+                G.children.push(J),
+                K && (0 != F && (G = o[oe[F - 2]]), (K.parent = G), G.children.push(K)),
                 Z && (0 != F && (G = o[oe[F - 1]]), (Z.parent = G), G.children.push(Z))
             }
           }
@@ -6142,7 +6244,11 @@ var FamilyTree = function (e, t) {
     }
     if (FamilyTree.VERTICAL_CHILDREN_ASSISTANT)
       for (c = 0; c < s.length; c++) FamilyTree.manager._verticalAssistantIterate(s[c], o)
-    return { nodes: o, roots: s, rootList: d }
+    ie = { nodes: o, roots: s }
+    return (
+      FamilyTree.events.publish('nodes-initialized', [e, ie]),
+      { nodes: ie.nodes, roots: ie.roots, rootList: d }
+    )
   }),
   (FamilyTree.manager._getOrderFieldValue = function (e, t) {
     var i = t
@@ -6387,7 +6493,7 @@ var FamilyTree = function (e, t) {
             s[0] < I && (s[0] = I)
         }
     }
-    for (var A = 0; A < d.length; A++) FamilyTree.manager._iterate2(d[A], p, r, s, c, m, y, h, i, T)
+    for (var N = 0; N < d.length; N++) FamilyTree.manager._iterate2(d[N], p, r, s, c, m, y, h, i, T)
     return {
       animations: T,
       boundary: g,
@@ -6576,6 +6682,74 @@ var FamilyTree = function (e, t) {
     for (var r = 0; r < e.children.length; r++)
       FamilyTree.manager._verticalAssistantLevelCountIterate(e.children[r], t, i)
   }),
+  (FamilyTree._addDottedLines = function (e) {
+    var t = e.nodes
+    if (
+      ((e.groupDottedLines.length || e.dottedLines.length) && (t = JSON.parse(JSON.stringify(t))),
+      e.groupDottedLines.length)
+    )
+      for (var i = [], r = 0; r < e.groupDottedLines.length; r++) {
+        var a = e.groupDottedLines[r]
+        null == a.rootId && (a.rootId = a.to)
+        var n = `balkan_group_dotted_${a.rootId}`
+        if (!i.has(n))
+          for (var l = 0; l < t.length; l++)
+            if (t[l].id == a.rootId) {
+              ;((c = JSON.parse(
+                JSON.stringify(t[l])
+              )).id = `balkan_group_dotted_${a.rootId}_balkan_id_${t[l].id}`),
+                (c.pid = void 0),
+                (c.stpid = t[l].id),
+                t.push(c),
+                i.push(n),
+                t[l].tags || (t[l].tags = []),
+                t[l].tags.push('group-dotted-lines'),
+                t[l].tags.push('group-dotted-lines-' + n)
+              break
+            }
+        for (l = 0; l < t.length; l++)
+          if (t[l].id == a.from) {
+            if (
+              (((c = JSON.parse(
+                JSON.stringify(t[l])
+              )).id = `balkan_group_dotted_${a.rootId}_balkan_id_${t[l].id}`),
+              (c.pid = `balkan_group_dotted_${a.rootId}_balkan_id_${a.to}`),
+              c.tags)
+            ) {
+              var o = c.tags.indexOf('group-dotted-lines')
+              ;-1 != o && c.tags.splice(o, 1)
+            }
+            if ((c.tags || (c.tags = []), c.tags.push('bft-dotted-connector'), a.tags))
+              for (var s = 0; s < a.tags.length; s++) c.tags.push(a.tags[s])
+            t.push(c)
+            break
+          }
+      }
+    if (e.dottedLines.length)
+      for (r = 0; r < e.dottedLines.length; r++) {
+        var d = e.dottedLines[r]
+        null == d.rootId && (d.rootId = d.to)
+        for (l = 0; l < t.length; l++)
+          if (t[l].id == d.from) {
+            var c
+            if (
+              (((c = JSON.parse(
+                JSON.stringify(t[l])
+              )).id = `balkan_dotted_${d.rootId}_balkan_id_${t[l].id}`),
+              d.rootId == d.to
+                ? (c.pid = d.to)
+                : (c.pid = `balkan_dotted_${d.rootId}_balkan_id_${d.to}`),
+              c.tags || (c.tags = []),
+              c.tags.push('bft-dotted-connector'),
+              d.tags)
+            )
+              for (s = 0; s < d.tags.length; s++) c.tags.push(d.tags[s])
+            t.push(c)
+            break
+          }
+      }
+    return t
+  }),
   (FamilyTree.manager.__createNodes = function (e, t, i, r, a, n, l, o) {
     for (var s = i.nodes, d = [], c = {}, m = {}, p = 0; p < s.length; p++) {
       var h,
@@ -6755,7 +6929,7 @@ var FamilyTree = function (e, t) {
   }),
   (FamilyTree.templates = {}),
   (FamilyTree.templates.base = {
-    defs: `<g transform="matrix(1,0,0,1,0,0)" id="dot"><circle class="bft-fill" cx="0" cy="0" r="5" stroke="#aeaeae" stroke-width="1"></circle></g>\n            <g id="base_node_menu" style="cursor:pointer;"><rect x="0" y="0" fill="transparent" width="22" height="22"></rect><circle cx="4" cy="11" r="2" fill="#ffffff"></circle><circle cx="11" cy="11" r="2" fill="#ffffff"></circle><circle cx="18" cy="11" r="2" fill="#ffffff"></circle></g>\n            <g style="cursor: pointer;" id="base_tree_menu">\n                <rect x="0" y="0" width="25" height="25" fill="transparent"></rect>\n                ${FamilyTree.icon.addUser(
+    defs: `<g transform="matrix(1,0,0,1,0,0)" id="dot"><circle class="bft-fill" cx="0" cy="0" r="5" stroke="#aeaeae" stroke-width="1"></circle></g>\n            <g id="base_node_menu" style="cursor:pointer;"><rect x="0" y="0" fill="transparent" width="22" height="22"></rect><circle cx="4" cy="11" r="2" fill="#aeaeae"></circle><circle cx="11" cy="11" r="2" fill="#aeaeae"></circle><circle cx="18" cy="11" r="2" fill="#aeaeae"></circle></g>\n            <g style="cursor: pointer;" id="base_tree_menu">\n                <rect x="0" y="0" width="25" height="25" fill="transparent"></rect>\n                ${FamilyTree.icon.addUser(
       25,
       25,
       '#fff',
@@ -6778,7 +6952,7 @@ var FamilyTree = function (e, t) {
     linkAdjuster: { fromX: 0, fromY: 0, toX: 0, toY: 0 },
     ripple: { radius: 0, color: '#e6e6e6', rect: null },
     expandCollapseSize: 0,
-    svg: '<svg class="{randId} {template} bft-{mode}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"  style="display:block;" width="{w}" height="{h}" viewBox="{viewBox}">{content}</svg>',
+    svg: '<svg class="{randId} {template}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"  style="display:block;" width="{w}" height="{h}" viewBox="{viewBox}">{content}</svg>',
     link: '<path stroke-linejoin="round" stroke="#aeaeae" stroke-width="1px" fill="none" d="{rounded}" />',
     assistanseLink:
       '<path stroke-linejoin="round" stroke="#aeaeae" stroke-width="2px" fill="none" d="M{xa},{ya} {xb},{yb} {xc},{yc} {xd},{yd} L{xe},{ye}"/>',
@@ -6812,6 +6986,7 @@ var FamilyTree = function (e, t) {
   (FamilyTree.templates.dot.nodeTreeMenuCloseButton = ''),
   (FamilyTree.templates.dot.up = ''),
   (FamilyTree.templates.john = Object.assign({}, FamilyTree.templates.base)),
+  (FamilyTree.templates.john.nodeMenuButton = `<use ${FamilyTree.attr.control_node_menu_id}="{id}" x="90" y="50" xlink:href="#base_node_menu"/>`),
   (FamilyTree.templates.john.defs = `<style>                          \n                                        .{randId} .bft-edit-form-header, .{randId} .bft-img-button{\n                                            background-color: #aeaeae;\n                                        }\n                                        .{randId}.male .bft-edit-form-header, .{randId}.male .bft-img-button{\n                                            background-color: #039BE5;\n                                        }        \n                                        .{randId}.male div.bft-img-button:hover{\n                                            background-color: #F57C00;\n                                        }\n                                        .{randId}.female .bft-edit-form-header, .{randId}.female .bft-img-button{\n                                            background-color: #F57C00;\n                                        }        \n                                        .{randId}.female div.bft-img-button:hover{\n                                            background-color: #039BE5;\n                                        }\n                                    </style>\n                                    <clipPath id="john_img_0"><rect  x="6" y="6" rx="54" ry="54" width="108" height="108"></rect></clipPath>\n                                    ${FamilyTree.gradientCircleForDefs(
     'circle',
     '#aeaeae',
@@ -6979,37 +7154,44 @@ var FamilyTree = function (e, t) {
           ((p.value = f),
           (p.element = c[h]),
           (p.name = u),
+          (p.field = h),
           !1 !== FamilyTree.events.publish('field', [d, p]) &&
             null != p.value &&
             null != p.value &&
             null != p.element)
         ) {
-          y || 'string' != typeof p.value || (p.value = FamilyTree.wrapText(p.value, p.element))
-          var g = p.element.replace('{val}', p.value)
-          m += g = g
-            .replaceAll('{ew}', e.w - (e.padding ? e.padding[1] : 0))
+          if (!y && 'string' == typeof p.value) {
+            var g = p.element
+            g &&
+              (g = g
+                .replaceAll('{ew}', e.w - (e.padding ? e.padding[1] : 0))
+                .replaceAll('{cw}', e.w / 2)),
+              (p.value = FamilyTree.wrapText(p.value, g))
+          }
+          var T = p.element.replace('{val}', p.value)
+          m += T = T.replaceAll('{ew}', e.w - (e.padding ? e.padding[1] : 0))
             .replaceAll('{cw}', e.w / 2)
             .replaceAll('{randId}', FamilyTree.randomId())
             .replaceAll('{randId2}', FamilyTree.randomId())
         }
       }
-      var T = FamilyTree._getPosition(i, e, a, n),
-        b = 'node'
-      Array.isArray(e.tags) && e.tags.length && (b += ' ' + e.tags.join(' ')),
-        e.layout && (b += ' tree-layout')
-      var v = ''
-      e.lcn && (v = 'lcn="' + e.lcn + '"')
-      var F = FamilyTree.nodeOpenTag
-          .replace('{lcn}', v)
+      var b = FamilyTree._getPosition(i, e, a, n),
+        v = 'node'
+      Array.isArray(e.tags) && e.tags.length && (v += ' ' + e.tags.join(' ')),
+        e.layout && (v += ' tree-layout')
+      var F = ''
+      e.lcn && (F = 'lcn="' + e.lcn + '"')
+      var x = FamilyTree.nodeOpenTag
+          .replace('{lcn}', F)
           .replace('{id}', e.id)
-          .replace('{class}', b)
+          .replace('{class}', v)
           .replace('{sl}', e.sl)
           .replace('{level}', e.level)
-          .replace('{x}', T.x)
-          .replace('{y}', T.y),
-        x = FamilyTree._getOpacity(i, e)
+          .replace('{x}', b.x)
+          .replace('{y}', b.y),
+        _ = FamilyTree._getOpacity(i, e)
       return (m =
-        (F = F.replace('{opacity}', x)) +
+        (x = x.replace('{opacity}', _)) +
         (m += FamilyTree.ui.nodeBtns(r, e, o, c, d)) +
         FamilyTree.grCloseTag)
     },
@@ -7433,10 +7615,10 @@ var FamilyTree = function (e, t) {
         var S = ''
         for (var C in t.config.linkBinding) {
           var I = t.config.linkBinding[C],
-            A = t._get(y.id)
-          if (A) {
-            var N = A[I]
-            ;(k.value = N),
+            N = t._get(y.id)
+          if (N) {
+            var A = N[I]
+            ;(k.value = A),
               (k.element = s[C]),
               (k.name = I),
               !1 !== FamilyTree.events.publish('label', [t, k]) &&
@@ -7522,7 +7704,7 @@ var FamilyTree = function (e, t) {
           xd: s,
           yd: d,
           x: o,
-          y: c + 16,
+          y: FamilyTree.isNEU(t.parentPartner) ? c + 16 : c,
           rotate: 0
         }
       )
@@ -7835,7 +8017,7 @@ var FamilyTree = function (e, t) {
       this.config.mouseScrool === FamilyTree.action.xScroll
     ) {
       var t = this
-      this.bar && this.bar.parentNode.removeChild(this.bar),
+      this.bar && this.bar.parentNode && this.bar.parentNode.removeChild(this.bar),
         (this.bar = document.createElement('div')),
         this.config.showXScroll !== FamilyTree.scroll.visible &&
           (this.bar.style.visibility = 'hidden'),
@@ -7955,7 +8137,7 @@ var FamilyTree = function (e, t) {
       this.config.mouseScrool === FamilyTree.action.yScroll
     ) {
       var t = this
-      this.bar && this.bar.parentNode.removeChild(this.bar),
+      this.bar && this.bar.parentNode && this.bar.parentNode.removeChild(this.bar),
         (this.bar = document.createElement('div')),
         this.config.showYScroll !== FamilyTree.scroll.visible &&
           (this.bar.style.visibility = 'hidden'),
@@ -8828,24 +9010,24 @@ var FamilyTree = function (e, t) {
       }
       l && (s = s.reverse()), (s[0] = 'M' + s[0].join(','))
       for (var I = 1; I < s.length; I++) s[I] = 'L' + s[I].join(',')
-      var A = s.join(' ')
+      var N = s.join(' ')
       if (o.label) {
-        var N = h.label.replace('{x}', S.x).replace('{y}', S.y).replace('{val}', o.label),
-          M = FamilyTree._getLabelSize(N),
-          E = -M.height / 2
+        var A = h.label.replace('{x}', S.x).replace('{y}', S.y).replace('{val}', o.label),
+          E = FamilyTree._getLabelSize(A),
+          M = -E.height / 2
         switch (p.orientation) {
           case FamilyTree.orientation.bottom:
           case FamilyTree.orientation.bottom_left:
-            E = M.height
+            M = E.height
         }
         i += h.label
           .replace('{x}', S.x)
-          .replace('{y}', S.y + E)
+          .replace('{y}', S.y + M)
           .replace('{val}', o.label)
       }
       var L = t.id,
-        U = n.id
-      l && ((L = n.id), (U = t.id)),
+        O = n.id
+      l && ((L = n.id), (O = t.id)),
         (i +=
           (
             '<g ' +
@@ -8855,10 +9037,10 @@ var FamilyTree = function (e, t) {
             '="{to}">'
           )
             .replace('{from}', L)
-            .replace('{to}', U) +
-          h.link.replaceAll('{d}', A) +
+            .replace('{to}', O) +
+          h.link.replaceAll('{d}', N) +
           '<path stroke="transparent" stroke-width="15" fill="none" d="' +
-          A +
+          N +
           '" />'),
         (i += FamilyTree.grCloseTag)
     }
@@ -8908,81 +9090,144 @@ var FamilyTree = function (e, t) {
     label: '<text  fill="#FFCA28" text-anchor="middle" x="{x}" y="{y}">{val}</text>',
     labelPosition: 'middle'
   }),
+  FamilyTree.events.on('renderbuttons', function (e, t) {
+    if (t.node && t.node.tags && t.node.tags.has('group-dotted-lines')) {
+      var i = e.getScale(),
+        r = FamilyTree.t(t.node.templateName, t.node.min, i),
+        a = ''
+      t.node.min
+        ? (r.nodeGroupDottedOpenButton ||
+            console.error(`[${t.node.templateName}].nodeGroupDottedOpenButton is not defined`),
+          (a += `<g style="cursor:pointer;"  data-ctrl-n-dotted-open="${t.node.id}" transform="matrix(1,0,0,1,${t.node.x},${t.node.y})">`),
+          (a += r.nodeGroupDottedOpenButton))
+        : (r.nodeGroupDottedCloseButton ||
+            console.error(`[${t.node.templateName}].nodeGroupDottedCloseButton is not defined`),
+          (a += `<g style="cursor:pointer;" transform="matrix(1,0,0,1,${t.node.x},${t.node.y})" data-ctrl-n-dotted-close="${t.node.id}">`),
+          (a += r.nodeGroupDottedCloseButton)),
+        (a = (a += '</g>')
+          .replaceAll('{cw}', t.node.w / 2)
+          .replaceAll('{ch}', t.node.h / 2)
+          .replaceAll('{ew}', t.node.w - (t.node.padding ? t.node.padding[1] : 0))
+          .replaceAll('{eh}', t.node.h - (t.node.padding ? t.node.padding[2] : 0)))
+      var n = e.getNode(t.node.stChildrenIds[0])
+      if (-1 != a.indexOf('{collapsed-children-count}')) {
+        var l = FamilyTree.collapsedChildrenCount(e, n)
+        a = a.replace('{collapsed-children-count}', l)
+      }
+      if (-1 != a.indexOf('{collapsed-children-total-count}')) {
+        var o = FamilyTree.collapsedChildrenTotalCount(e, n)
+        a = a.replace('{collapsed-children-total-count}', o)
+      }
+      if (-1 != a.indexOf('{children-count}')) {
+        var s = FamilyTree.childrenCount(e, n)
+        a = a.replace('{children-count}', s)
+      }
+      if (-1 != a.indexOf('{children-total-count}')) {
+        var d = FamilyTree.childrenTotalCount(e, n)
+        a = a.replace('{children-total-count}', d)
+      }
+      t.html += a
+    }
+  }),
   FamilyTree.events.on('redraw', function (e, t) {
-    if (e.config.miniMap && e.manager.action != FamilyTree.action.move) {
-      ;(FamilyTree.miniMap._settings._scale = Math.min(
-        FamilyTree.miniMap.width / (e.response.boundary.maxX - e.response.boundary.minX),
-        FamilyTree.miniMap.height / (e.response.boundary.maxY - e.response.boundary.minY)
-      )),
-        (FamilyTree.miniMap._settings._translateX =
-          -e.response.boundary.minX * FamilyTree.miniMap._settings._scale +
-          (FamilyTree.miniMap.width -
-            (e.response.boundary.maxX - e.response.boundary.minX) *
-              FamilyTree.miniMap._settings._scale) /
-            2),
-        (FamilyTree.miniMap._settings._translateY =
-          -e.response.boundary.minY * FamilyTree.miniMap._settings._scale +
-          (FamilyTree.miniMap.height -
-            (e.response.boundary.maxY - e.response.boundary.minY) *
-              FamilyTree.miniMap._settings._scale) /
-            2)
-      var i = e.getViewBox()
-      FamilyTree.miniMap._init(e),
-        FamilyTree.miniMap._drawMainCanvas(e),
-        FamilyTree.miniMap._drawRectSelectorCanvas(e, i)
-      var r,
-        a,
-        n,
-        l,
-        o = e.element.querySelector('[data-id="mini-map-focus"]'),
-        s = !1,
-        d = null
-      ;(o.onmousedown = function (e) {
-        var t,
+    if (e.config.groupDottedLines.length) {
+      for (
+        var i = e.element.querySelectorAll('[data-ctrl-n-dotted-close]'), r = 0;
+        r < i.length;
+        r++
+      )
+        i[r].addEventListener('click', function () {
+          var t = this.getAttribute('data-ctrl-n-dotted-close')
+          e.minimize(t)
+        })
+      var a = e.element.querySelectorAll('[data-ctrl-n-dotted-open]')
+      for (r = 0; r < a.length; r++)
+        a[r].addEventListener('click', function () {
+          var t = this.getAttribute('data-ctrl-n-dotted-open')
+          e.maximize(t)
+        })
+    }
+  }),
+  FamilyTree.events.on('redraw', function (e, t) {
+    if (e.config.miniMap) {
+      if (e.manager.action != FamilyTree.action.move) {
+        ;(FamilyTree.miniMap._settings._scale = Math.min(
+          FamilyTree.miniMap.width / (e.response.boundary.maxX - e.response.boundary.minX),
+          FamilyTree.miniMap.height / (e.response.boundary.maxY - e.response.boundary.minY)
+        )),
+          (FamilyTree.miniMap._settings._translateX =
+            -e.response.boundary.minX * FamilyTree.miniMap._settings._scale +
+            (FamilyTree.miniMap.width -
+              (e.response.boundary.maxX - e.response.boundary.minX) *
+                FamilyTree.miniMap._settings._scale) /
+              2),
+          (FamilyTree.miniMap._settings._translateY =
+            -e.response.boundary.minY * FamilyTree.miniMap._settings._scale +
+            (FamilyTree.miniMap.height -
+              (e.response.boundary.maxY - e.response.boundary.minY) *
+                FamilyTree.miniMap._settings._scale) /
+              2)
+        var i = e.getViewBox()
+        FamilyTree.miniMap._init(e),
+          FamilyTree.miniMap._drawMainCanvas(e),
+          FamilyTree.miniMap._drawRectSelectorCanvas(e, i)
+        var r,
+          a,
           n,
           l,
-          d = o.getBoundingClientRect(),
-          c = d.left,
-          m = d.top
-        if (
-          ((r = parseInt(e.clientX - c)),
-          (a = parseInt(e.clientY - m)),
-          (t = a),
-          (n =
-            (r - FamilyTree.miniMap._settings._translateX) / FamilyTree.miniMap._settings._scale),
-          (l =
-            (t - FamilyTree.miniMap._settings._translateY) / FamilyTree.miniMap._settings._scale),
-          n > i[0] && n < i[0] + i[2] && l > i[1] && l < i[1] + i[3])
-        )
-          return e.preventDefault(), e.stopPropagation(), void (s = !0)
-      }),
-        (o.onmousemove = function (t) {
-          if (s) {
-            t.preventDefault(), t.stopPropagation()
-            var c = o.getBoundingClientRect(),
-              m = c.left,
-              p = c.top
-            ;(n = parseInt(t.clientX - m)), (l = parseInt(t.clientY - p))
-            var h = (n - r) / FamilyTree.miniMap._settings._scale,
-              f = (l - a) / FamilyTree.miniMap._settings._scale
-            ;(i[0] = h + i[0]),
-              (i[1] = f + i[1]),
-              e.setViewBox(i),
-              d && (clearTimeout(d), (d = null)),
-              (d = setTimeout(function () {
-                e._draw(!0, FamilyTree.action.move)
-              }, 300)),
-              FamilyTree.miniMap._drawRectSelectorCanvas(e, i),
-              (r = n),
-              (a = l)
-          }
+          o = e.element.querySelector('[data-id="mini-map-focus"]'),
+          s = !1,
+          d = null
+        ;(o.onmousedown = function (e) {
+          var t,
+            n,
+            l,
+            d = o.getBoundingClientRect(),
+            c = d.left,
+            m = d.top
+          if (
+            ((r = parseInt(e.clientX - c)),
+            (a = parseInt(e.clientY - m)),
+            (t = a),
+            (n =
+              (r - FamilyTree.miniMap._settings._translateX) / FamilyTree.miniMap._settings._scale),
+            (l =
+              (t - FamilyTree.miniMap._settings._translateY) / FamilyTree.miniMap._settings._scale),
+            n > i[0] && n < i[0] + i[2] && l > i[1] && l < i[1] + i[3])
+          )
+            return e.preventDefault(), e.stopPropagation(), void (s = !0)
         }),
-        (o.onmouseup = function (e) {
-          s && (e.preventDefault(), e.stopPropagation(), (s = !1))
-        }),
-        (o.onmouseout = function (e) {
-          s && (e.preventDefault(), e.stopPropagation(), (s = !1))
-        })
+          (o.onmousemove = function (t) {
+            if (s) {
+              t.preventDefault(), t.stopPropagation()
+              var c = o.getBoundingClientRect(),
+                m = c.left,
+                p = c.top
+              ;(n = parseInt(t.clientX - m)), (l = parseInt(t.clientY - p))
+              var h = (n - r) / FamilyTree.miniMap._settings._scale,
+                f = (l - a) / FamilyTree.miniMap._settings._scale
+              ;(i[0] = h + i[0]),
+                (i[1] = f + i[1]),
+                e.setViewBox(i),
+                d && (clearTimeout(d), (d = null)),
+                (d = setTimeout(function () {
+                  e._draw(!0, FamilyTree.action.move)
+                }, 300)),
+                FamilyTree.miniMap._drawRectSelectorCanvas(e, i),
+                (r = n),
+                (a = l)
+            }
+          }),
+          (o.onmouseup = function (e) {
+            s && (e.preventDefault(), e.stopPropagation(), (s = !1))
+          }),
+          (o.onmouseout = function (e) {
+            s && (e.preventDefault(), e.stopPropagation(), (s = !1))
+          })
+      }
+    } else {
+      var c = e.element.querySelector('[data-id="mini-map"]')
+      c && c.parentNode.removeChild(c)
     }
   }),
   (FamilyTree.miniMap = {}),
@@ -9593,7 +9838,7 @@ var FamilyTree = function (e, t) {
     var n = ''
     return (
       t.btn &&
-        (n = `<a href="#" bft-input-btn="" class="bft-link bft-link-bft-button">${t.btn}</a>`),
+        (n = `<a href="#" data-input-btn="" class="bft-link bft-link-bft-button">${t.btn}</a>`),
       {
         html: `<div class="bft-form-field" style="min-width: ${i};">\n                    <div class="bft-input" data-bft-input="" ${
           a.disabledAttribute
@@ -10036,7 +10281,7 @@ var FamilyTree = function (e, t) {
     })
   }),
   (FamilyTree.ui.css = function () {
-    return '<style data-bft-styles>.bft-button{background-color:#039be5;cursor:pointer;width:calc(100%);height:50px;color:#fff;padding-top:5px;padding-left:7px;padding-right:7px;text-align:center;text-transform:uppercase;border:1px solid #3fc0ff;display:inline-block;border-radius:5px}.bft-button.orange{background-color:#f57c00;border:1px solid #ffa03e}.bft-button.yellow{background-color:#ffca28;border:1px solid #ffdf7c}.bft-button.lower{text-transform:unset}.bft-button.transparent{background-color:transparent}.bft-button:hover{background-color:#35afea}.bft-button.orange:hover{background-color:#f79632}.bft-button.yellow:hover{background-color:#ffd452}.bft-button:active{transform:matrix(.98,0,0,.98,0,0)}.bft-button-icon{text-align:initial;cursor:pointer;margin-bottom:15px;color:#039be5}.bft-dark .bft-button-icon:hover{background-color:#2d2d2d}.bft-light .bft-button-icon:hover{background-color:#ececec}.bft-button-icon>img{height:24px;width:24px;vertical-align:middle;padding:7px}.bft-button:focus{outline:0}.bft-button-icon>img{filter:invert(46%) sepia(66%) saturate(2530%) hue-rotate(171deg) brightness(95%) contrast(98%)}.bft-light .bft-button.transparent{color:#039be5}.bft-light .bft-button.transparent:hover{color:#fff}.bft-button-loading{background-color:transparent;cursor:pointer;width:calc(100% - 2px);height:50px;color:#fff;text-align:center;text-transform:uppercase;border:1px solid #027cb7;display:inline-block;display:flex;justify-content:center;align-items:center;display:none}.bft-button-loading .bft-loading-dots div{margin:0 10px}.bft-link-bft-button{position:absolute;right:10px;top:-1px}@media screen and (max-width:1000px){.bft-link-bft-button{right:50px}}[data-bft-input-disabled] .bft-link-bft-button{display:none}[dir=rtl] .bft-link-bft-button{left:10px;right:unset}.bft-img-button{width:48px;height:48px;cursor:pointer;border-radius:50%;background-color:#039be5;background-repeat:no-repeat;background-size:24px 24px;background-position:center center;margin:3px;display:inline-block}.bft-img-button:hover{background-color:#f57c00}.bft-checkbox{display:block;position:relative;padding-left:35px;margin-bottom:12px;cursor:pointer;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;white-space:nowrap}.bft-checkbox input{position:absolute;opacity:0;cursor:pointer;height:0;width:0}.bft-checkbox-checkmark{position:absolute;top:0;left:0;height:25px;width:25px;border-radius:5px}.bft-dark [data-bft-input-disabled] .bft-checkbox-checkmark,.bft-dark [data-bft-input-disabled].bft-checkbox input:checked~.bft-checkbox-checkmark,.bft-light [data-bft-input-disabled] .bft-checkbox-checkmark,.bft-light [data-bft-input-disabled].bft-checkbox input:checked~.bft-checkbox-checkmark{background-color:#aeaeae!important}[data-bft-input-disabled].bft-checkbox{cursor:default}[dir=rtl] .bft-checkbox-checkmark{right:0}[dir=rtl] .bft-checkbox{padding-left:unset;padding-right:35px}.bft-dark .bft-checkbox-checkmark{background-color:#333;border:1px solid #5b5b5b}.bft-light .bft-checkbox-checkmark{background-color:#fff;border:1px solid #c7c7c7}.bft-dark .bft-checkbox:hover input~.bft-checkbox-checkmark{background-color:#3c3c3c}.bft-light .bft-checkbox:hover input~.bft-checkbox-checkmark{background-color:#f8f9f9}.bft-dark .bft-checkbox input:checked~.bft-checkbox-checkmark{background-color:#039be5}.bft-light .bft-checkbox input:checked~.bft-checkbox-checkmark{background-color:#039be5}.bft-checkbox-checkmark:after{content:"";position:absolute;display:none}.bft-checkbox input:checked~.bft-checkbox-checkmark:after{display:block}.bft-checkbox .bft-checkbox-checkmark:after{left:9px;top:5px;width:5px;height:10px;border:solid #fff;border-width:0 3px 3px 0;-webkit-transform:rotate(45deg);-ms-transform:rotate(45deg);transform:rotate(45deg)}.bft-filter{user-select:none}.bft-light .bft-filter{color:#757575}.bft-dark .bft-filter{color:#ccc}.bft-filter>div>div{display:inline-block;padding:3px 10px;cursor:pointer}.bft-filter-menu fieldset,.bft-filter>div,.filter-field-selected{border-radius:5px}.bft-filter-menu fieldset{overflow-y:auto;max-height:300px}.bft-filter>div.bft-filter-menu{padding:10px}.bft-light .bft-filter>div.bft-filter-menu,.bft-light .filter-field-selected{background-color:#f8f9f9}.bft-dark .bft-filter>div.bft-filter-menu,.bft-dark .filter-field-selected{background-color:#3c3c3c}.bft-light .bft-filter>div{background-color:#eee}.bft-dark .bft-filter>div{background-color:#333}.bft-form-perspective{transform-style:preserve-3d;perspective:500px;position:absolute;top:32px}.bft-form{box-shadow:rgba(0,0,0,.2) 0 6px 6px 0,rgba(0,0,0,.19) 0 13px 20px 0;padding:14px;transform-origin:top center;user-select:none;display:none;position:relative;max-height:calc(100vh - 100px);overflow-y:auto;border-bottom-left-radius:5px;border-bottom-right-radius:5px}.bft-form-bottom{border-bottom-left-radius:unset;border-bottom-right-radius:unset;border-top-left-radius:5px;border-top-right-radius:5px}.bft-form .separator{margin:0 10px}@media screen and (max-width:1000px){.bft-form-perspective{min-width:100%;max-height:calc(100% - 32px);left:unset!important;right:unset!important;transform:none!important}.bft-form .set{max-height:calc(100vh - 74px)}.bft-form-fieldset{max-width:unset!important}}.bft-light .bft-form .separator{border-bottom:1px solid #c7c7c7}.bft-dark .bft-form .separator{border-bottom:1px solid #5b5b5b}.bft-light .bft-form{background-color:#fff}.bft-dark .bft-form{background-color:#252526}.bft-item{padding:6px 12px 6px 12px;display:flex;flex-direction:row}.bft-light .bft-form .bft-item.selected,.bft-light .bft-form .bft-item:hover{background-color:#0074e8;color:#fff}.bft-dark .bft-form .bft-item.selected,.bft-dark .bft-form .bft-item:hover{background-color:#094771;color:#fff}.bft-item.selected img,.bft-item:hover img{filter:invert(100%)}.bft-item.selected img{visibility:visible!important}.bft-form-fieldset{display:flex;flex-wrap:wrap;margin:0!important}.bft-form-field{flex:1 0 21%;margin:3px;min-width:200px}.bft-form-field-100{flex:1 0 96%;margin:3px;min-width:200px}.bft-input{position:relative}.bft-input>input,.bft-input>select{height:50px;padding:18px 10px 2px 9px;width:100%;box-sizing:border-box;border-style:solid;border-width:1px}.bft-input select{height:50px;padding:20px 5px 4px 5px}[data-bft-input-disabled].bft-input>input,[data-bft-input-disabled].bft-input>select{border-color:transparent!important}.bft-light [data-bft-input-disabled]>input,.bft-light [data-bft-input-disabled]>select{background-color:#fff!important}.bft-dark [data-bft-input-disabled]>input,.bft-dark [data-bft-input-disabled]>select{background-color:#252526!important}[data-bft-input-disabled]>select{appearance:none;padding-left:8px}.bft-input>label{display:inline-block;position:absolute;padding-left:10px;padding-right:10px;color:#acacac;cursor:text;-webkit-transition:all .1s ease-out;-moz-transition:all .1s ease-out;-ms-transition:all .1s ease-out;-o-transition:all .1s ease-out;transition:all .1 ease-out;-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;cursor:initial;text-align:initial;white-space:nowrap}.bft-input>label{top:12px;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 14px)}.bft-input>label.focused,.bft-input>label.hasval{top:-1px}.bft-input>input,.bft-input>select{outline:0;border-radius:5px}.bft-dark .bft-input>label.focused,.bft-light .bft-input>label.focused{color:#039be5}.bft-dark .bft-input>input,.bft-dark .bft-input>select{color:#ccc;background-color:#333;border-color:#5b5b5b}.bft-light .bft-input>input,.bft-light .bft-input>select{color:#757575;background-color:#fff;border-color:#c7c7c7}.bft-light .bft-input>input:focus,.bft-light .bft-input>select:focus{border-color:#039be5;background-color:#f8f9f9}.bft-dark .bft-input>input:focus,.bft-dark .bft-input>select:focus{border-color:#039be5;background-color:#3c3c3c}.bft-dark .bft-input>input.bft-validation-error,.bft-dark .bft-input>select.bft-validation-error,.bft-light .bft-input>input.bft-validation-error,.bft-light .bft-input>select.bft-validation-error{border-color:#ca2a2a}.bft-dark .bft-validation-error-message,.bft-light .bft-validation-error-message{color:#ca2a2a}.bft-link{color:#039be5;cursor:pointer;text-decoration:underline}.bft-link:hover{color:#f57c00}.bft-dark ::-webkit-scrollbar,.bft-light ::-webkit-scrollbar{width:15px}.bft-dark ::-webkit-scrollbar-track{background:#1e1e1e;border-left:1px solid #333}.bft-dark ::-webkit-scrollbar-thumb{background:#424242}.bft-dark ::-webkit-scrollbar-thumb:hover{background:#4f4f4f}.bft-dark ::-webkit-scrollbar-thumb:active{background:#5e5e5e}.bft-light ::-webkit-scrollbar-track{background:#fff;border-left:1px solid #ddd}.bft-light ::-webkit-scrollbar-thumb{background:#c1c1c1}.bft-light ::-webkit-scrollbar-thumb:hover{background:#929292}.bft-light ::-webkit-scrollbar-thumb:active{background:#666}.bft-edit-form{position:fixed;top:0;right:0;height:100%;width:100%;box-shadow:rgba(0,0,0,.2) 0 6px 6px 0,rgba(0,0,0,.19) 0 13px 20px 0;display:flex;flex-direction:column;height:100%;width:400px}@media screen and (max-width:1000px){.bft-edit-form{width:100%}}.bft-dark .bft-edit-form{background-color:#252526}.bft-light .bft-edit-form{background-color:#fff}.bft-edit-form-header{height:200px;text-align:center;border-radius:10px}.export-service .bft-edit-form-header{border-radius:unset}.bft-edit-form-title{color:#fff;margin:0;padding:14px 17px 7px 17px}.bft-edit-form-avatar{border-radius:50%;width:150px;height:150px;position:absolute;top:75px;border:5px solid #fff;left:50%;transform:translateX(-50%);background-color:#cacaca;box-shadow:rgba(0,0,0,.2) 0 6px 6px 0,rgba(0,0,0,.19) 0 13px 20px 0}.bft-edit-form-close{position:absolute;right:14px;top:14px;width:34px;height:34px;cursor:pointer}.bft-edit-form-fields{flex-grow:1;overflow-y:auto;overflow-x:hidden}.bft-edit-form-fields-inner{margin:0 7px 20px 7px}.bft-family-menu{opacity:0;display:inline-block;position:absolute;text-align:left;user-select:none;min-width:270px;box-shadow:rgba(0,0,0,.2) 0 4px 8px 0,rgba(0,0,0,.19) 0 6px 20px 0;font:13px/28px Helvetica,"Segoe UI",Arial,sans-serif;border-radius:10px}.bft-family-menu>div:hover img{filter:invert(100%)}.bft-family-menu [data-item]{text-align:start;padding:7px 10px}.bft-dark .bft-family-menu [data-item]{background-color:#252526;color:#acacac;border-bottom:1px solid #333}.bft-dark .bft-family-menu [data-item]:hover{background-color:#094771!important;color:#fff!important}.bft-dark .bft-family-menu [data-item]:hover svg{filter:brightness(0) invert(1)}.bft-light .bft-family-menu [data-item]{background-color:#fff;color:#333;border-bottom:1px solid #c7c7c7}.bft-light .bft-family-menu [data-item]:hover{background-color:#0074e8!important;color:#fff!important}.bft-light .bft-family-menu [data-item]:hover svg{filter:brightness(0) invert(1)}.bft-family-menu [data-item] svg{vertical-align:middle}.bft-family-menu [data-item]:first-child{border-top-left-radius:7px;border-top-right-radius:7px}.bft-family-menu [data-item]:last-child{border-bottom-width:0;border-bottom-style:none;border-bottom-left-radius:7px;border-bottom-right-radius:7px}.bft-search{position:absolute}@media screen and (max-width:1000px){.bft-search{width:calc(100% - 30px);left:15px}}.bft-search .bft-input{margin-bottom:0}.bft-search-input{color:#7a7a7a;width:100%;border:none;outline:0;padding-top:10px;padding-right:47px}.bft-search-image-td{width:43px}.bft-search-text-td{padding-inline-end:7px;line-height:15px;text-align:start}.bft-search table{box-shadow:rgba(0,0,0,.2) 0 4px 8px 0,rgba(0,0,0,.19) 0 6px 20px 0;margin:0 3.5px 0 3.5px;width:calc(100% - 7px);border-radius:7px}.bft-search table tr:first-child td:first-child{border-top-left-radius:7px}.bft-search table tr:first-child td:last-child{border-top-right-radius:7px}[dir=rtl] .bft-search table tr:first-child td:first-child{border-top-left-radius:unset;border-top-right-radius:7px}[dir=rtl] .bft-search table tr:first-child td:last-child{border-top-right-radius:unset;border-top-left-radius:7px}.bft-search table tr:last-child td:first-child{border-bottom-left-radius:7px}.bft-search table tr:last-child td:last-child{border-bottom-right-radius:7px}[dir=rtl] .bft-search table tr:last-child td:first-child{border-bottom-left-radius:unset;border-bottom-right-radius:7px}[dir=rtl] .bft-search table tr:last-child td:last-child{border-bottom-right-radius:unset;border-bottom-left-radius:7px}.bft-dark .bft-search table{background-color:#252526;color:#acacac}.bft-search [data-search-item-id]{cursor:pointer}.bft-search-photo{margin:7px 7px 0 7px;width:32px;height:32px;background-size:cover;background-position:top center;border-radius:50%;display:inline-block;border:1px solid #8c8c8c}.bft-dark .bft-search [data-search-item-id] td{border-top:1px solid #333}.bft-dark .bft-search [data-search-item-id]:hover,.bft-dark .bft-search [data-selected=yes]{background-color:#094771;color:#fff}.bft-light .bft-search table{background-color:#fff;color:#333}.bft-light .bft-search [data-search-item-id] td{border-top:1px solid #c7c7c7}.bft-light .bft-search [data-search-item-id]:hover,.bft-light .bft-search [data-selected=yes]{background-color:#0074e8;color:#fff}.bft-search [data-search-item-id]:first-child td{border-top:unset}.bft-ripple-container{position:absolute;top:0;right:0;bottom:0;left:0}.bft-drag-over rect{opacity:.5}.bft-ripple-container span{transform:scale(0);border-radius:100%;position:absolute;opacity:.75;background-color:#fff;animation:bft-ripple 1s}@-moz-keyframes bft-ripple{to{opacity:0;transform:scale(2)}}@-webkit-keyframes bft-ripple{to{opacity:0;transform:scale(2)}}@-o-keyframes bft-ripple{to{opacity:0;transform:scale(2)}}@keyframes bft-ripple{to{opacity:0;transform:scale(2)}}.bft-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;-webkit-transition:.4s;transition:.4s}.bft-slider:before{position:absolute;content:"";height:16px;width:16px;left:4px;bottom:4px;background-color:#fff;-webkit-transition:.4s;transition:.4s}.bft-slider.round{border-radius:24px}.bft-slider.round:before{border-radius:50%}svg text:hover{cursor:default}svg.bft-cursor-grab,svg.bft-cursor-grab text:hover{cursor:grab}svg.bft-cursor-nodrop,svg.bft-cursor-nodrop text:hover{cursor:no-drop}svg.bft-cursor-copy,svg.bft-cursor-copy text:hover{cursor:copy}svg.bft-cursor-move,svg.bft-cursor-move text:hover{cursor:move}#bft-close-btn:focus,#bft-close-btn:hover{color:#000;text-decoration:none;cursor:pointer}#bft-id-select:focus{outline:.5px solid #aeaeae}#bft-sampleDialog #title:hover{cursor:default;background:gray}.bft-light{background-color:#fff;font:13px/28px Helvetica,"Segoe UI",Arial,sans-serif}.bft-dark{background-color:#1e1e1e;font:13px/28px Helvetica,"Segoe UI",Arial,sans-serif}.bft-light .bft-fill{fill:#fff}.bft-dark .bft-fill{fill:#1e1e1e}.bft-dark input,.bft-dark select,.bft-light input,.bft-light select{font:16px Helvetica,"Segoe UI",Arial,sans-serif}.bft-dark h1,.bft-light h1{font-size:30px;line-height:1}.bft-edit-form{position:absolute;border-radius:10px}.export-service .bft-edit-form{border-radius:unset}.bft-dark .bft-edit-form{color:#acacac}.bft-light .bft-edit-form{color:#333}.bft-dark ::-webkit-calendar-picker-indicator{filter:invert(70%)}.bft-light ::-webkit-calendar-picker-indicator{filter:invert(50%)}.bft-edit-form-instruments{margin:42px 10px 0 10px;text-align:center;min-height:70px}.bft-img-button svg{position:relative;top:12px}.bft-light .bft-toolbar-container svg circle,.bft-light .bft-toolbar-container svg line,.bft-light .bft-toolbar-container svg path{stroke:#8c8c8c!important}.bft-dark .bft-toolbar-container svg circle,.bft-dark .bft-toolbar-container svg line,.bft-dark .bft-toolbar-container svg path{stroke:#8c8c8c!important}.bft-dark .bft-toolbar-container svg rect{fill:#252526!important}.bft-dark .bft-toolbar-container [data-tlbr=minus] svg{border-left:1px solid #5b5b5b!important;border-right:1px solid #5b5b5b!important;border-bottom:1px solid #5b5b5b!important}.bft-dark .bft-toolbar-container [data-tlbr=plus] svg{border-left:1px solid #5b5b5b!important;border-right:1px solid #5b5b5b!important;border-top:1px solid #5b5b5b!important}.bft-dark .bft-toolbar-container [data-tlbr]>svg{border:1px solid #5b5b5b!important;background-color:#252526!important}</style>'
+    return '<style data-bft-styles>.bft-button{background-color:#039be5;cursor:pointer;width:calc(100%);height:50px;color:#fff;padding-top:5px;padding-left:7px;padding-right:7px;text-align:center;text-transform:uppercase;border:1px solid #3fc0ff;display:inline-block;border-radius:5px}.bft-button.orange{background-color:#f57c00;border:1px solid #ffa03e}.bft-button.yellow{background-color:#ffca28;border:1px solid #ffdf7c}.bft-button.lower{text-transform:unset}.bft-button.transparent{background-color:transparent}.bft-button:hover{background-color:#35afea}.bft-button.orange:hover{background-color:#f79632}.bft-button.yellow:hover{background-color:#ffd452}.bft-button:active{transform:matrix(.98,0,0,.98,0,0)}.bft-button-icon{text-align:initial;cursor:pointer;margin-bottom:15px;color:#039be5}.bft-dark .bft-button-icon:hover{background-color:#2d2d2d}.bft-light .bft-button-icon:hover{background-color:#ececec}.bft-button-icon>img{height:24px;width:24px;vertical-align:middle;padding:7px}.bft-button:focus{outline:0}.bft-button-icon>img{filter:invert(46%) sepia(66%) saturate(2530%) hue-rotate(171deg) brightness(95%) contrast(98%)}.bft-light .bft-button.transparent{color:#039be5}.bft-light .bft-button.transparent:hover{color:#fff}.bft-button-loading{background-color:transparent;cursor:pointer;width:calc(100% - 2px);height:50px;color:#fff;text-align:center;text-transform:uppercase;border:1px solid #027cb7;display:inline-block;display:flex;justify-content:center;align-items:center;display:none}.bft-button-loading .bft-loading-dots div{margin:0 10px}.bft-link-bft-button{position:absolute;right:10px;top:-1px}@media screen and (max-width:1000px){.bft-link-bft-button{right:50px}}[data-bft-input-disabled] .bft-link-bft-button{display:none}[dir=rtl] .bft-link-bft-button{left:10px;right:unset}.bft-img-button{width:48px;height:48px;cursor:pointer;border-radius:50%;background-color:#039be5;background-repeat:no-repeat;background-size:24px 24px;background-position:center center;margin:3px;display:inline-block}.bft-img-button:hover{background-color:#f57c00}.bft-checkbox{display:block;position:relative;padding-left:35px;margin-bottom:12px;cursor:pointer;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;white-space:nowrap}.bft-checkbox input{position:absolute;opacity:0;cursor:pointer;height:0;width:0}.bft-checkbox-checkmark{position:absolute;top:0;left:0;height:25px;width:25px;border-radius:5px}.bft-dark [data-bft-input-disabled] .bft-checkbox-checkmark,.bft-dark [data-bft-input-disabled].bft-checkbox input:checked~.bft-checkbox-checkmark,.bft-light [data-bft-input-disabled] .bft-checkbox-checkmark,.bft-light [data-bft-input-disabled].bft-checkbox input:checked~.bft-checkbox-checkmark{background-color:#aeaeae!important}[data-bft-input-disabled].bft-checkbox{cursor:default}[dir=rtl] .bft-checkbox-checkmark{right:0}[dir=rtl] .bft-checkbox{padding-left:unset;padding-right:35px}.bft-dark .bft-checkbox-checkmark{background-color:#333;border:1px solid #5b5b5b}.bft-light .bft-checkbox-checkmark{background-color:#fff;border:1px solid #c7c7c7}.bft-dark .bft-checkbox:hover input~.bft-checkbox-checkmark{background-color:#3c3c3c}.bft-light .bft-checkbox:hover input~.bft-checkbox-checkmark{background-color:#f8f9f9}.bft-dark .bft-checkbox input:checked~.bft-checkbox-checkmark{background-color:#039be5}.bft-light .bft-checkbox input:checked~.bft-checkbox-checkmark{background-color:#039be5}.bft-checkbox-checkmark:after{content:"";position:absolute;display:none}.bft-checkbox input:checked~.bft-checkbox-checkmark:after{display:block}.bft-checkbox .bft-checkbox-checkmark:after{left:9px;top:5px;width:5px;height:10px;border:solid #fff;border-width:0 3px 3px 0;-webkit-transform:rotate(45deg);-ms-transform:rotate(45deg);transform:rotate(45deg)}.bft-filter{user-select:none}.bft-light .bft-filter{color:#757575}.bft-dark .bft-filter{color:#ccc}.bft-filter>div>div{display:inline-block;padding:3px 10px;cursor:pointer}.bft-filter-menu fieldset,.bft-filter>div,.filter-field-selected{border-radius:5px}.bft-filter-menu fieldset{overflow-y:auto;max-height:300px}.bft-filter>div.bft-filter-menu{padding:10px}.bft-light .bft-filter>div.bft-filter-menu,.bft-light .filter-field-selected{background-color:#f8f9f9}.bft-dark .bft-filter>div.bft-filter-menu,.bft-dark .filter-field-selected{background-color:#3c3c3c}.bft-light .bft-filter>div{background-color:#eee}.bft-dark .bft-filter>div{background-color:#333}.bft-form-perspective{transform-style:preserve-3d;perspective:500px;position:absolute;top:32px}.bft-form{box-shadow:rgba(0,0,0,.2) 0 6px 6px 0,rgba(0,0,0,.19) 0 13px 20px 0;padding:14px;transform-origin:top center;user-select:none;display:none;position:relative;max-height:calc(100vh - 100px);overflow-y:auto;border-bottom-left-radius:5px;border-bottom-right-radius:5px}.bft-form-bottom{border-bottom-left-radius:unset;border-bottom-right-radius:unset;border-top-left-radius:5px;border-top-right-radius:5px}.bft-form .separator{margin:0 10px}@media screen and (max-width:1000px){.bft-form-perspective{min-width:100%;max-height:calc(100% - 32px);left:unset!important;right:unset!important;transform:none!important}.bft-form .set{max-height:calc(100vh - 74px)}.bft-form-fieldset{max-width:unset!important}}.bft-light .bft-form .separator{border-bottom:1px solid #c7c7c7}.bft-dark .bft-form .separator{border-bottom:1px solid #5b5b5b}.bft-light .bft-form{background-color:#fff}.bft-dark .bft-form{background-color:#252526}.bft-item{padding:6px 12px 6px 12px;display:flex;flex-direction:row}.bft-light .bft-form .bft-item.selected,.bft-light .bft-form .bft-item:hover{background-color:#0074e8;color:#fff}.bft-dark .bft-form .bft-item.selected,.bft-dark .bft-form .bft-item:hover{background-color:#094771;color:#fff}.bft-item.selected img,.bft-item:hover img{filter:invert(100%)}.bft-item.selected img{visibility:visible!important}.bft-form-fieldset{display:flex;flex-wrap:wrap;margin:0!important}.bft-form-field{flex:1 0 21%;margin:3px;min-width:200px}.bft-form-field-100{flex:1 0 96%;margin:3px;min-width:200px}.bft-input{position:relative}.bft-input>input,.bft-input>select{height:50px;padding:18px 10px 2px 9px;width:100%;box-sizing:border-box;border-style:solid;border-width:1px}.bft-input select{height:50px;padding:20px 5px 4px 5px}[data-bft-input-disabled].bft-input>input,[data-bft-input-disabled].bft-input>select{border-color:transparent!important}.bft-light [data-bft-input-disabled]>input,.bft-light [data-bft-input-disabled]>select{background-color:#fff!important}.bft-dark [data-bft-input-disabled]>input,.bft-dark [data-bft-input-disabled]>select{background-color:#252526!important}[data-bft-input-disabled]>select{appearance:none;padding-left:8px}.bft-input>label{display:inline-block;position:absolute;padding-left:10px;padding-right:10px;color:#acacac;cursor:text;-webkit-transition:all .1s ease-out;-moz-transition:all .1s ease-out;-ms-transition:all .1s ease-out;-o-transition:all .1s ease-out;transition:all .1 ease-out;-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;cursor:initial;text-align:initial;white-space:nowrap}.bft-input>label{top:12px;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 14px)}.bft-input>label.focused,.bft-input>label.hasval{top:-1px}.bft-input>input,.bft-input>select{outline:0;border-radius:5px}.bft-dark .bft-input>label.focused,.bft-light .bft-input>label.focused{color:#039be5}.bft-dark .bft-input>input,.bft-dark .bft-input>select{color:#ccc;background-color:#333;border-color:#5b5b5b}.bft-light .bft-input>input,.bft-light .bft-input>select{color:#757575;background-color:#fff;border-color:#c7c7c7}.bft-light .bft-input>input:focus,.bft-light .bft-input>select:focus{border-color:#039be5;background-color:#f8f9f9}.bft-dark .bft-input>input:focus,.bft-dark .bft-input>select:focus{border-color:#039be5;background-color:#3c3c3c}.bft-dark .bft-input>input.bft-validation-error,.bft-dark .bft-input>select.bft-validation-error,.bft-light .bft-input>input.bft-validation-error,.bft-light .bft-input>select.bft-validation-error{border-color:#ca2a2a}.bft-dark .bft-validation-error-message,.bft-light .bft-validation-error-message{color:#ca2a2a}.bft-link{color:#039be5;cursor:pointer;text-decoration:underline}.bft-link:hover{color:#f57c00}.bft-dark ::-webkit-scrollbar,.bft-light ::-webkit-scrollbar{width:15px;height:15px}.bft-dark ::-webkit-scrollbar-corner{background:#1e1e1e}.bft-dark ::-webkit-scrollbar-track{background:#1e1e1e;border-left:1px solid #333;border-top:1px solid #333}.bft-dark ::-webkit-scrollbar-thumb{background:#424242}.bft-dark ::-webkit-scrollbar-thumb:hover{background:#4f4f4f}.bft-dark ::-webkit-scrollbar-thumb:active{background:#5e5e5e}.bft-light ::-webkit-scrollbar-corner{background:#fff}.bft-light ::-webkit-scrollbar-track{background:#fff;border-left:1px solid #ddd;border-top:1px solid #ddd}.bft-light ::-webkit-scrollbar-thumb{background:#c1c1c1}.bft-light ::-webkit-scrollbar-thumb:hover{background:#929292}.bft-light ::-webkit-scrollbar-thumb:active{background:#666}.bft-edit-form{position:fixed;top:0;right:0;height:100%;width:100%;box-shadow:rgba(0,0,0,.2) 0 6px 6px 0,rgba(0,0,0,.19) 0 13px 20px 0;display:flex;flex-direction:column;height:100%;width:400px}@media screen and (max-width:1000px){.bft-edit-form{width:100%}}.bft-dark .bft-edit-form{background-color:#252526}.bft-light .bft-edit-form{background-color:#fff}.bft-edit-form-header{height:200px;text-align:center;border-radius:10px}.export-service .bft-edit-form-header{border-radius:unset}.bft-edit-form-title{color:#fff;margin:0;padding:14px 17px 7px 17px}.bft-edit-form-avatar{border-radius:50%;width:150px;height:150px;position:absolute;top:75px;border:5px solid #fff;left:50%;transform:translateX(-50%);background-color:#cacaca;box-shadow:rgba(0,0,0,.2) 0 6px 6px 0,rgba(0,0,0,.19) 0 13px 20px 0}.bft-edit-form-close{position:absolute;right:14px;top:14px;width:34px;height:34px;cursor:pointer}.bft-edit-form-fields{flex-grow:1;overflow-y:auto;overflow-x:hidden}.bft-edit-form-fields-inner{margin:0 7px 20px 7px}.bft-family-menu{opacity:0;display:inline-block;position:absolute;text-align:left;user-select:none;min-width:270px;box-shadow:rgba(0,0,0,.2) 0 4px 8px 0,rgba(0,0,0,.19) 0 6px 20px 0;font:13px/28px Helvetica,"Segoe UI",Arial,sans-serif;border-radius:10px}.bft-family-menu>div:hover img{filter:invert(100%)}.bft-family-menu [data-item]{text-align:start;padding:7px 10px}.bft-dark .bft-family-menu [data-item]{background-color:#252526;color:#acacac;border-bottom:1px solid #333}.bft-dark .bft-family-menu [data-item]:hover{background-color:#094771!important;color:#fff!important}.bft-dark .bft-family-menu [data-item]:hover svg{filter:brightness(0) invert(1)}.bft-light .bft-family-menu [data-item]{background-color:#fff;color:#333;border-bottom:1px solid #c7c7c7}.bft-light .bft-family-menu [data-item]:hover{background-color:#0074e8!important;color:#fff!important}.bft-light .bft-family-menu [data-item]:hover svg{filter:brightness(0) invert(1)}.bft-family-menu [data-item] svg{vertical-align:middle}.bft-family-menu [data-item]:first-child{border-top-left-radius:7px;border-top-right-radius:7px}.bft-family-menu [data-item]:last-child{border-bottom-width:0;border-bottom-style:none;border-bottom-left-radius:7px;border-bottom-right-radius:7px}.bft-search{position:absolute}@media screen and (max-width:500px){.bft-search{width:calc(100% - 30px);left:15px}}.bft-search .bft-input{margin-bottom:0}.bft-search-input{color:#7a7a7a;width:100%;border:none;outline:0;padding-top:10px;padding-right:47px}.bft-search-image-td{width:43px}.bft-search-text-td{padding-inline-end:7px;line-height:15px;text-align:start}.bft-search table{box-shadow:rgba(0,0,0,.2) 0 4px 8px 0,rgba(0,0,0,.19) 0 6px 20px 0;margin:0 3.5px 0 3.5px;width:calc(100% - 7px);border-radius:7px}.bft-search table tr:first-child td:first-child{border-top-left-radius:7px}.bft-search table tr:first-child td:last-child{border-top-right-radius:7px}[dir=rtl] .bft-search table tr:first-child td:first-child{border-top-left-radius:unset;border-top-right-radius:7px}[dir=rtl] .bft-search table tr:first-child td:last-child{border-top-right-radius:unset;border-top-left-radius:7px}.bft-search table tr:last-child td:first-child{border-bottom-left-radius:7px}.bft-search table tr:last-child td:last-child{border-bottom-right-radius:7px}[dir=rtl] .bft-search table tr:last-child td:first-child{border-bottom-left-radius:unset;border-bottom-right-radius:7px}[dir=rtl] .bft-search table tr:last-child td:last-child{border-bottom-right-radius:unset;border-bottom-left-radius:7px}.bft-dark .bft-search table{background-color:#252526;color:#acacac}.bft-search [data-search-item-id]{cursor:pointer}.bft-search-photo{margin:7px 7px 0 7px;width:32px;height:32px;background-size:cover;background-position:top center;border-radius:50%;display:inline-block;border:1px solid #8c8c8c}.bft-dark .bft-search [data-search-item-id] td{border-top:1px solid #333}.bft-dark .bft-search [data-search-item-id]:hover,.bft-dark .bft-search [data-selected=yes]{background-color:#094771;color:#fff}.bft-light .bft-search table{background-color:#fff;color:#333}.bft-light .bft-search [data-search-item-id] td{border-top:1px solid #c7c7c7}.bft-light .bft-search [data-search-item-id]:hover,.bft-light .bft-search [data-selected=yes]{background-color:#0074e8;color:#fff}.bft-search [data-search-item-id]:first-child td{border-top:unset}.bft-ripple-container{position:absolute;top:0;right:0;bottom:0;left:0}.bft-drag-over rect{opacity:.5}.bft-ripple-container span{transform:scale(0);border-radius:100%;position:absolute;opacity:.75;background-color:#fff;animation:bft-ripple 1s}@-moz-keyframes bft-ripple{to{opacity:0;transform:scale(2)}}@-webkit-keyframes bft-ripple{to{opacity:0;transform:scale(2)}}@-o-keyframes bft-ripple{to{opacity:0;transform:scale(2)}}@keyframes bft-ripple{to{opacity:0;transform:scale(2)}}.bft-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;-webkit-transition:.4s;transition:.4s}.bft-slider:before{position:absolute;content:"";height:16px;width:16px;left:4px;bottom:4px;background-color:#fff;-webkit-transition:.4s;transition:.4s}.bft-slider.round{border-radius:24px}.bft-slider.round:before{border-radius:50%}svg text:hover{cursor:default}svg.bft-cursor-grab,svg.bft-cursor-grab text:hover{cursor:grab}svg.bft-cursor-nodrop,svg.bft-cursor-nodrop text:hover{cursor:no-drop}svg.bft-cursor-copy,svg.bft-cursor-copy text:hover{cursor:copy}svg.bft-cursor-move,svg.bft-cursor-move text:hover{cursor:move}#bft-close-btn:focus,#bft-close-btn:hover{color:#000;text-decoration:none;cursor:pointer}#bft-id-select:focus{outline:.5px solid #aeaeae}#bft-sampleDialog #title:hover{cursor:default;background:gray}.bft-light{background-color:#fff;font:13px/28px Helvetica,"Segoe UI",Arial,sans-serif}.bft-dark{background-color:#1e1e1e;font:13px/28px Helvetica,"Segoe UI",Arial,sans-serif}.bft-light .bft-fill{fill:#fff}.bft-dark .bft-fill{fill:#1e1e1e}.bft-dark input,.bft-dark select,.bft-light input,.bft-light select{font:16px Helvetica,"Segoe UI",Arial,sans-serif}.bft-dark h1,.bft-light h1{font-size:30px;line-height:1}.bft-edit-form{position:absolute;border-radius:10px}.export-service .bft-edit-form{border-radius:unset}.bft-dark .bft-edit-form{color:#acacac}.bft-light .bft-edit-form{color:#333}.bft-dark ::-webkit-calendar-picker-indicator{filter:invert(70%)}.bft-light ::-webkit-calendar-picker-indicator{filter:invert(50%)}.bft-edit-form-instruments{margin:42px 10px 0 10px;text-align:center;min-height:70px}.bft-img-button svg{position:relative;top:12px}.bft-light .bft-toolbar-container svg circle,.bft-light .bft-toolbar-container svg line,.bft-light .bft-toolbar-container svg path{stroke:#8c8c8c!important}.bft-dark .bft-toolbar-container svg circle,.bft-dark .bft-toolbar-container svg line,.bft-dark .bft-toolbar-container svg path{stroke:#8c8c8c!important}.bft-dark .bft-toolbar-container svg rect{fill:#252526!important}.bft-dark .bft-toolbar-container [data-tlbr=minus] svg{border-left:1px solid #5b5b5b!important;border-right:1px solid #5b5b5b!important;border-bottom:1px solid #5b5b5b!important}.bft-dark .bft-toolbar-container [data-tlbr=plus] svg{border-left:1px solid #5b5b5b!important;border-right:1px solid #5b5b5b!important;border-top:1px solid #5b5b5b!important}.bft-dark .bft-toolbar-container [data-tlbr]>svg{border:1px solid #5b5b5b!important;background-color:#252526!important}.bft-toolbar-layout{height:123px;padding-top:20px;position:absolute;width:100%;left:"0";bottom:"-145px"}.bft-light .bft-toolbar-layout{border-top:1px solid #c7c7c7;background-color:#f9f9f9}.bft-dark .bft-toolbar-layout{border-top:1px solid #5b5b5b;background-color:#2b2b2b}.bft-dotted-connector path{stroke-dasharray:7}</style>'
   }),
   FamilyTree.events.on('render', function (e, t) {
     if ((e.recentRoots || (e.recentRoots = []), e.config.roots))
@@ -10119,9 +10364,9 @@ var FamilyTree = function (e, t) {
     })
   }),
   (FamilyTree.prototype.onDrop = function (e) {
-    return this.on('drop', function (t, i, r) {
-      var a = { dragId: i, dropId: r }
-      return e.call(t, a)
+    return this.on('drop', function (t, i, r, a) {
+      var n = { dragId: i, dropId: r, dragNodeElement: a }
+      return e.call(t, n)
     })
   }),
   (FamilyTree.prototype.onDrag = function (e) {
@@ -10380,7 +10625,7 @@ var FamilyTree = function (e, t) {
       o++
     )
       n.push(e[o].id), FamilyTree.remote._toReqDTO(e[o], a)
-    var s = { n: a, c: l, r: n, v: '8.07.00' }
+    var s = { n: a, c: l, r: n, v: '8.10.09' }
     if ((FamilyTree.LIMIT_NODES || (s.l = !0), null != FamilyTree.remote._fromReqDTO))
       FamilyTree.remote._fromReqDTO(s.n, s.r, s.c, function (t) {
         for (var a = 0; a < e.length; a++) FamilyTree.remote._fromResDTO(e[a], t, 0, e, r)
